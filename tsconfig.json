@@ -1,7 +1,29 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+  "compilerOptions": {
+    "target": "ESNext",                         // Specify ECMAScript target version
+    "useDefineForClassFields": true,            // Use the new 'useDefineForClassFields' flag
+    "module": "ESNext",                         // Specify module code generation
+    "moduleResolution": "Node",                 // Use Node.js module resolution
+    "strict": true,                             // Enable all strict type-checking options
+    "jsx": "preserve",                          // Preserve JSX syntax (for Vue files)
+    "sourceMap": true,                          // Generate source map files
+    "resolveJsonModule": true,                  // Include modules imported with '.json' extension
+    "esModuleInterop": true,                    // Enable interoperability between CommonJS and ES Modules
+    "lib": ["ESNext", "DOM"],                   // Include standard library declarations
+    "skipLibCheck": true,                       // Skip type checking of declaration files
+    "allowSyntheticDefaultImports": true,       // Allow default imports from modules with no default export
+    "baseUrl": ".",                             // Base directory to resolve non-relative module names
+    "paths": {
+      "@/*": ["src/*"]                          // Path alias for '@/...' imports
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.vue"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
   ]
 }
