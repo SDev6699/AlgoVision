@@ -1,31 +1,25 @@
 import type { Cell, CellState } from '@/composables/useGrid';
 import type { Ref } from 'vue';
 
-export async function aStarAlgorithm(
+export async function bfsAlgorithm(
   grid: Cell[][],
   startNode: { row: number; col: number },
   endNode: { row: number; col: number },
   updateCellState: (row: number, col: number, state: CellState) => void,
   statusMessage: Ref<string>
 ) {
-  const openSet: Cell[] = [];
-  const closedSet: Set<Cell> = new Set();
+  const queue: Cell[] = [];
+  const visited: Set<Cell> = new Set();
   let nodesVisited = 0;
 
   const startCell = grid[startNode.row][startNode.col];
   const endCell = grid[endNode.row][endNode.col];
 
-  startCell.gCost = 0;
-  startCell.hCost = heuristic(startCell, endCell);
-  startCell.fCost = startCell.hCost;
+  queue.push(startCell);
+  visited.add(startCell);
 
-  openSet.push(startCell);
-
-  while (openSet.length > 0) {
-    // Sort openSet by fCost
-    openSet.sort((a, b) => a.fCost - b.fCost);
-    const currentCell = openSet.shift()!;
-    closedSet.add(currentCell);
+  while (queue.length > 0) {
+    const currentCell = queue.shift()!;
     nodesVisited++;
 
     if (currentCell === endCell) {
@@ -37,33 +31,20 @@ export async function aStarAlgorithm(
 
     const neighbors = getNeighbors(currentCell, grid);
     for (const neighbor of neighbors) {
-      if (closedSet.has(neighbor) || neighbor.state === 'wall') {
-        continue;
-      }
-      const tentativeGCost = currentCell.gCost + 1;
-      if (tentativeGCost < neighbor.gCost) {
+      if (!visited.has(neighbor) && neighbor.state !== 'wall') {
         neighbor.previousNode = currentCell;
-        neighbor.gCost = tentativeGCost;
-        neighbor.hCost = heuristic(neighbor, endCell);
-        neighbor.fCost = neighbor.gCost + neighbor.hCost;
+        visited.add(neighbor);
+        queue.push(neighbor);
 
-        if (!openSet.includes(neighbor)) {
-          openSet.push(neighbor);
-          if (neighbor.state !== 'end') {
-            updateCellState(neighbor.row, neighbor.col, 'visited');
-            await sleep(10); // Adjust speed as needed
-          }
+        if (neighbor.state !== 'end') {
+          updateCellState(neighbor.row, neighbor.col, 'visited');
+          await sleep(10);
         }
       }
     }
   }
 
   statusMessage.value = `No path found. Nodes visited: ${nodesVisited}`;
-}
-
-function heuristic(a: Cell, b: Cell): number {
-  // Manhattan distance
-  return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
 }
 
 function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
@@ -84,7 +65,7 @@ async function drawPath(
   while (currentCell?.previousNode) {
     if (currentCell.state !== 'end') {
       updateCellState(currentCell.row, currentCell.col, 'path');
-      await sleep(30); // Adjust speed as needed
+      await sleep(30);
     }
     currentCell = currentCell.previousNode;
   }

@@ -1,4 +1,5 @@
 {
+  "types": ["node"],
   "compilerOptions": {
     "target": "ESNext",                         // Specify ECMAScript target version
     "useDefineForClassFields": true,            // Use the new 'useDefineForClassFields' flag
@@ -12,9 +13,9 @@
     "lib": ["ESNext", "DOM"],                   // Include standard library declarations
     "skipLibCheck": true,                       // Skip type checking of declaration files
     "allowSyntheticDefaultImports": true,       // Allow default imports from modules with no default export
-    "baseUrl": ".",                             // Base directory to resolve non-relative module names
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]                          // Path alias for '@/...' imports
+      "@/*": ["src/*"]
     }
   },
   "include": [

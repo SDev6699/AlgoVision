@@ -1,4 +1,3 @@
-<!-- src/components/Main.vue -->
 <template>
     <div class="container mx-auto">
       <!-- This is where your main content will go -->
