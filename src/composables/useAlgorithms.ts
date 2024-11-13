@@ -6,9 +6,9 @@ import { dfsAlgorithm } from '@/algorithms/dfsAlgorithm';
 import { dijkstraAlgorithm } from '@/algorithms/dijkstraAlgorithm';
 import { useStatus } from '@/composables/useStatus';
 
+// Export selectedAlgorithm so it can be imported elsewhere
 export type AlgorithmType = 'A*' | 'BFS' | 'DFS' | 'Dijkstra';
 
-// Define selectedAlgorithm at the top level to ensure it's a shared instance
 export const selectedAlgorithm = ref<AlgorithmType>('A*');
 
 export function useAlgorithms() {

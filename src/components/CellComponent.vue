@@ -1,5 +1,6 @@
 <template>
   <div
+    :id="`cell-${cell.row}-${cell.col}`"
     :class="cellClass"
     @mousedown="handleMouseDown"
     @mouseenter="handleMouseEnter"
@@ -47,25 +48,11 @@ export default defineComponent({
         case 'wall':
           return 'bg-gray-800';
         case 'visited':
-          return this.visitedCellClass;
+          return ''; // No background color class; GSAP handles it
         case 'path':
           return 'bg-yellow-500';
         default:
           return 'bg-gray-700';
-      }
-    },
-    visitedCellClass(): string {
-      switch (this.selectedAlgorithm) {
-        case 'A*':
-          return 'bg-blue-500';
-        case 'BFS':
-          return 'bg-purple-500';
-        case 'DFS':
-          return 'bg-pink-500';
-        case 'Dijkstra':
-          return 'bg-teal-500';
-        default:
-          return 'bg-blue-500';
       }
     },
   },
@@ -94,5 +81,6 @@ div {
   align-items: center;
   justify-content: center;
   user-select: none;
+  /* Remove background-color to prevent overriding class styles */
 }
 </style>
