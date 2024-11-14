@@ -1,8 +1,9 @@
+
 import { reactive, computed, nextTick } from 'vue';
 import { gsap } from 'gsap';
 import { selectedAlgorithm } from './useAlgorithms';
 import { animationsEnabled } from './useAnimations';
-import { startGlowEffect } from './animations'; // Updated import
+import { startGlowEffect, clearGlowEffects } from './animations'; // Updated import
 
 export type CellState = 'empty' | 'start' | 'end' | 'wall' | 'visited' | 'path';
 
@@ -25,6 +26,9 @@ export function useGrid() {
   const startNode = reactive({ row: -1, col: -1 });
   const endNode = reactive({ row: -1, col: -1 });
 
+  /**
+   * Initializes the grid with empty cells.
+   */
   function initializeGrid() {
     grid.length = 0;
     for (let row = 0; row < numRows; row++) {
@@ -36,6 +40,11 @@ export function useGrid() {
     }
   }
 
+  /**
+   * Creates a new cell with default properties.
+   * @param row - The row index of the cell.
+   * @param col - The column index of the cell.
+   */
   function createCell(row: number, col: number): Cell {
     return {
       row,
@@ -48,6 +57,12 @@ export function useGrid() {
     };
   }
 
+  /**
+   * Updates the state of a specific cell and triggers animations if applicable.
+   * @param row - The row index of the cell.
+   * @param col - The column index of the cell.
+   * @param state - The new state to set for the cell.
+   */
   function updateCellState(row: number, col: number, state: CellState) {
     const cell = grid[row][col];
     cell.state = state;
@@ -61,11 +76,18 @@ export function useGrid() {
 
         if (state === 'visited') {
           animateVisitedCell(cellElement);
+        } else if (state === 'path') {
+          // Optionally, apply specific styles or animations for path cells
+          // The glow effect is handled in the algorithm
         }
       }
     });
   }
 
+  /**
+   * Animates a visited cell using GSAP.
+   * @param cellElement - The HTML element of the cell to animate.
+   */
   function animateVisitedCell(cellElement: HTMLElement) {
     if (!animationsEnabled.value) return;
 
@@ -76,21 +98,27 @@ export function useGrid() {
     });
   }
 
+  /**
+   * Determines the color for visited cells based on the selected algorithm.
+   */
   function getVisitedCellColor(): string {
     switch (selectedAlgorithm.value) {
       case 'A*':
-        return '#3B82F6';
+        return '#3B82F6'; // Blue
       case 'BFS':
-        return '#8B5CF6';
+        return '#8B5CF6'; // Purple
       case 'DFS':
-        return '#EC4899';
+        return '#EC4899'; // Pink
       case 'Dijkstra':
-        return '#14B8A6';
+        return '#14B8A6'; // Teal
       default:
         return '#3B82F6';
     }
   }
 
+  /**
+   * Resets the entire grid, clearing all cells, nodes, walls, and terminating glow effects.
+   */
   function resetGrid() {
     grid.forEach((row) => {
       row.forEach((cell) => {
@@ -102,8 +130,14 @@ export function useGrid() {
     startNode.col = -1;
     endNode.row = -1;
     endNode.col = -1;
+
+    // Terminate all active glow animations
+    clearGlowEffects();
   }
 
+  /**
+   * Resets only the grid state (visited cells and paths), retaining walls and nodes.
+   */
   function resetGridState() {
     grid.forEach((row) => {
       row.forEach((cell) => {
@@ -117,8 +151,16 @@ export function useGrid() {
         cell.previousNode = null;
       });
     });
+
+    // Terminate all active glow animations
+    clearGlowEffects();
   }
 
+  /**
+   * Clears inline styles from a specific cell.
+   * @param row - The row index of the cell.
+   * @param col - The column index of the cell.
+   */
   function clearCellInlineStyles(row: number, col: number) {
     nextTick(() => {
       const cellElement = document.getElementById(`cell-${row}-${col}`);

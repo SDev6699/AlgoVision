@@ -60,7 +60,15 @@ export default defineComponent({
   },
   setup() {
     // Get shared instances of grid and algorithms
-    const { grid, initializeGrid, updateCellState, resetGrid, resetGridState: resetGridStateFromUseGrid, startNode, endNode } = useGrid();
+    const {
+      grid,
+      initializeGrid,
+      updateCellState,
+      resetGrid,
+      resetGridState,
+      startNode,
+      endNode,
+    } = useGrid();
     const { selectedAlgorithm, runAlgorithm } = useAlgorithms();
     const { statusMessage } = useStatus(); // Shared instance of statusMessage
 
@@ -85,7 +93,9 @@ export default defineComponent({
     }));
 
     // Check if both start and end nodes are placed
-    const isStartAndEndPlaced = computed(() => isStartNodePlaced.value && isEndNodePlaced.value);
+    const isStartAndEndPlaced = computed(
+      () => isStartNodePlaced.value && isEndNodePlaced.value
+    );
 
     // Mouse event handlers for cell interaction
     function handleMouseDown() {
@@ -119,7 +129,10 @@ export default defineComponent({
         statusMessage.value = 'End node placed.';
       } else {
         placing.value = 'wall';
-        if (grid[row][col].state !== 'start' && grid[row][col].state !== 'end') {
+        if (
+          grid[row][col].state !== 'start' &&
+          grid[row][col].state !== 'end'
+        ) {
           updateCellState(row, col, 'wall');
         }
       }
@@ -127,7 +140,10 @@ export default defineComponent({
 
     function onCellMouseEnter(row: number, col: number) {
       if (isMouseDown.value && placing.value === 'wall') {
-        if (grid[row][col].state !== 'start' && grid[row][col].state !== 'end') {
+        if (
+          grid[row][col].state !== 'start' &&
+          grid[row][col].state !== 'end'
+        ) {
           updateCellState(row, col, 'wall');
         }
       }
@@ -146,9 +162,9 @@ export default defineComponent({
       statusMessage.value = 'Grid cleared. Ready to start.';
     }
 
-    // Reset only the grid state (visited cells) and update status message
+    // Reset only the grid state (visited cells and paths) and update status message
     function onResetGridState() {
-      resetGridStateFromUseGrid();
+      resetGridState();
       statusMessage.value = 'Grid reset. You can run the algorithm again.';
     }
 
@@ -162,9 +178,9 @@ export default defineComponent({
       isVisualizing.value = true;
       statusMessage.value = `Running ${selectedAlgorithm.value}...`;
 
-      onResetGridState();
+      resetGridState();
       await runAlgorithm(grid, startNode, endNode, updateCellState);
-      
+
       isVisualizing.value = false;
       statusMessage.value = 'Visualization complete.';
     }
@@ -202,5 +218,9 @@ export default defineComponent({
 }
 .controls {
   text-align: center;
+}
+.buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

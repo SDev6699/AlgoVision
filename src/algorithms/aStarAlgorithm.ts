@@ -1,6 +1,6 @@
 import type { Cell } from '@/composables/useGrid';
 import { sleep } from '@/utils/sleep';
-import { startGlowEffect } from '@/composables/animations'; // Updated import
+import { startGlowEffectWithDelay } from '@/composables/animations'; // Updated import
 import { gsap } from 'gsap';
 
 export async function aStarAlgorithm(
@@ -60,10 +60,16 @@ export async function aStarAlgorithm(
   statusMessage.value = 'No path found.';
 }
 
+/**
+ * Heuristic function using Manhattan distance.
+ */
 function heuristic(cellA: Cell, cellB: Cell): number {
   return Math.abs(cellA.row - cellB.row) + Math.abs(cellA.col - cellB.col);
 }
 
+/**
+ * Retrieves all valid neighboring cells (up, down, left, right).
+ */
 function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
   const neighbors: Cell[] = [];
   const { row, col } = cell;
@@ -78,6 +84,9 @@ function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
   return neighbors;
 }
 
+/**
+ * Draws the shortest path by updating cell states and applying glow effects.
+ */
 async function drawPath(
   endCell: Cell,
   updateCellState: (row: number, col: number, state: string) => void
@@ -100,18 +109,12 @@ async function drawPath(
     await sleep(30);
   }
 
-  // Create a GSAP timeline
-  const glowTimeline = gsap.timeline();
-
+  // Apply glow effect to the path cells with staggered delays
   for (const [index, cell] of pathCells.entries()) {
     const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
     if (cellElement) {
-      glowTimeline.add(
-        () => {
-          startGlowEffect(cellElement);
-        },
-        index * 0.1 // Adjust the timing as needed
-      );
+      // Start the glow effect with a slight delay between cells
+      startGlowEffectWithDelay(cellElement, index * 100); // 100ms delay between each glow start
     }
   }
 }
