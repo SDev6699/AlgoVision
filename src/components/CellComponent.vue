@@ -50,7 +50,7 @@ export default defineComponent({
         case 'visited':
           return ''; // No background color class; GSAP handles it
         case 'path':
-          return 'bg-yellow-500';
+          return 'bg-yellow-500'; // Assign yellow background for path cells
         default:
           return 'bg-gray-700';
       }
@@ -81,6 +81,7 @@ div {
   align-items: center;
   justify-content: center;
   user-select: none;
-  /* Remove background-color to prevent overriding class styles */
+  position: relative;
+  overflow: visible;
 }
 </style>

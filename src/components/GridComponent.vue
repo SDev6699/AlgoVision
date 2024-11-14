@@ -1,43 +1,45 @@
 <template>
-  <div
-    class="grid"
-    :style="gridStyle"
-    @mousedown="handleMouseDown"
-    @mouseup="handleMouseUp"
-    @mouseleave="handleMouseLeave"
-  >
-    <CellComponent
-      v-for="cell in flattenedGrid"
-      :key="`${cell.row}-${cell.col}`"
-      :cell="cell"
-      :isMouseDown="isMouseDown"
-      @cellMouseDown="onCellMouseDown"
-      @cellMouseEnter="onCellMouseEnter"
-      @cellMouseUp="onCellMouseUp"
-    />
-  </div>
-  <div class="controls mt-4 space-y-4">
-    <AlgorithmSelector />
-    <div class="buttons flex items-center justify-center space-x-2">
-      <button
-        class="bg-blue-500 text-white px-4 py-2 rounded"
-        @click="visualizeAlgorithm"
-        :disabled="!isStartAndEndPlaced || isVisualizing"
-      >
-        Visualize Algorithm
-      </button>
-      <button
-        class="bg-gray-500 text-white px-4 py-2 rounded"
-        @click="clearGrid"
-      >
-        Clear Grid
-      </button>
-      <button
-        class="bg-gray-500 text-white px-4 py-2 rounded"
-        @click="onResetGridState"
-      >
-        Reset
-      </button>
+  <div class="grid-container">
+    <div
+      class="grid"
+      :style="gridStyle"
+      @mousedown="handleMouseDown"
+      @mouseup="handleMouseUp"
+      @mouseleave="handleMouseLeave"
+    >
+      <CellComponent
+        v-for="cell in flattenedGrid"
+        :key="`${cell.row}-${cell.col}`"
+        :cell="cell"
+        :isMouseDown="isMouseDown"
+        @cellMouseDown="onCellMouseDown"
+        @cellMouseEnter="onCellMouseEnter"
+        @cellMouseUp="onCellMouseUp"
+      />
+    </div>
+    <div class="controls mt-4 space-y-4">
+      <AlgorithmSelector />
+      <div class="buttons flex items-center justify-center space-x-2">
+        <button
+          class="bg-blue-500 text-white px-4 py-2 rounded"
+          @click="visualizeAlgorithm"
+          :disabled="!isStartAndEndPlaced || isVisualizing"
+        >
+          Visualize Algorithm
+        </button>
+        <button
+          class="bg-gray-500 text-white px-4 py-2 rounded"
+          @click="clearGrid"
+        >
+          Clear Grid
+        </button>
+        <button
+          class="bg-gray-500 text-white px-4 py-2 rounded"
+          @click="onResetGridState"
+        >
+          Reset
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -191,6 +193,9 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.grid-container {
+  overflow: visible; /* Ensure overflow is visible */
+}
 .grid {
   margin: 0 auto;
   user-select: none;
