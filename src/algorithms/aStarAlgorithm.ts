@@ -1,4 +1,4 @@
-import type { Cell } from '@/composables/useGrid';
+import type { Cell, CellState } from '@/composables/useGrid';
 import { sleep } from '@/utils/sleep';
 import { startGlowEffectWithDelay } from '@/composables/animations'; // Updated import
 import { gsap } from 'gsap';
@@ -7,7 +7,7 @@ export async function aStarAlgorithm(
   grid: Cell[][],
   startNode: { row: number; col: number },
   endNode: { row: number; col: number },
-  updateCellState: (row: number, col: number, state: string) => void,
+  updateCellState: (row: number, col: number, state: CellState) => void,
   statusMessage: { value: string }
 ) {
   const openSet: Cell[] = [];
@@ -89,7 +89,7 @@ function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
  */
 async function drawPath(
   endCell: Cell,
-  updateCellState: (row: number, col: number, state: string) => void
+  updateCellState: (row: number, col: number, state: CellState) => void
 ) {
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
