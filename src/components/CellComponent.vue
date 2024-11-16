@@ -50,7 +50,7 @@ export default defineComponent({
         case 'visited':
           return ''; // No background color class; GSAP handles it
         case 'path':
-          return 'bg-yellow-500'; // Assign yellow background for path cells
+          return ''; // Removed 'bg-yellow-500' to allow GSAP to handle color
         default:
           return 'bg-gray-700';
       }

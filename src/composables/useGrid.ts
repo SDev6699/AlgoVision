@@ -1,9 +1,8 @@
-
 import { reactive, computed, nextTick } from 'vue';
 import { gsap } from 'gsap';
 import { selectedAlgorithm } from './useAlgorithms';
 import { animationsEnabled } from './useAnimations';
-import { startGlowEffect, clearGlowEffects } from './animations'; // Updated import
+import { startGlowEffect, clearGlowEffects } from './animations';
 
 export type CellState = 'empty' | 'start' | 'end' | 'wall' | 'visited' | 'path';
 
@@ -70,6 +69,7 @@ export function useGrid() {
     nextTick(() => {
       const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
       if (cellElement) {
+        // Reset inline styles
         cellElement.style.backgroundColor = '';
         cellElement.style.transform = '';
         cellElement.style.boxShadow = '';
@@ -77,8 +77,7 @@ export function useGrid() {
         if (state === 'visited') {
           animateVisitedCell(cellElement);
         } else if (state === 'path') {
-          // Optionally, apply specific styles or animations for path cells
-          // The glow effect is handled in the algorithm
+          animatePathCell(cellElement);
         }
       }
     });
@@ -94,7 +93,22 @@ export function useGrid() {
     const targetColor = getVisitedCellColor();
     gsap.to(cellElement, {
       backgroundColor: targetColor,
-      duration: 0.3,
+      duration: 0.3, // Duration matches the sleep in algorithms
+      ease: 'power1.inOut',
+    });
+  }
+
+  /**
+   * Animates a path cell to transition smoothly to yellow using GSAP.
+   * @param cellElement - The HTML element of the cell to animate.
+   */
+  function animatePathCell(cellElement: HTMLElement) {
+    if (!animationsEnabled.value) return;
+
+    gsap.to(cellElement, {
+      backgroundColor: '#FBBF24', // Tailwind's yellow-500
+      duration: 0.3, // Smooth transition duration
+      ease: 'power1.inOut',
     });
   }
 
