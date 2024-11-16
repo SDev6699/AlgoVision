@@ -39,7 +39,7 @@ export async function aStarAlgorithm(
         continue;
       }
 
-      const tentativeGCost = currentCell.gCost + 1;
+      const tentativeGCost = currentCell.gCost + 1; // Assuming uniform cost
       if (tentativeGCost < neighbor.gCost) {
         neighbor.gCost = tentativeGCost;
         neighbor.hCost = heuristic(neighbor, endCell);
@@ -94,7 +94,7 @@ async function drawPath(
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
 
-  // Trace back from end to start
+  // Trace back from end to start to collect path cells
   while (currentCell?.previousNode) {
     if (currentCell.state !== 'start' && currentCell.state !== 'end') {
       pathCells.push(currentCell);
@@ -102,32 +102,30 @@ async function drawPath(
     currentCell = currentCell.previousNode;
   }
 
-  // Ensure we have a valid path before proceeding
+  // Ensure there's a valid path to draw
   if (pathCells.length === 0) {
     console.warn('No path cells found to draw.');
     return;
   }
 
-  // Draw the path with yellow cells
+  // Draw the path by updating cell states to 'path' with delays for animation
   for (const cell of pathCells) {
     updateCellState(cell.row, cell.col, 'path');
-    await sleep(30); // Adjust sleep duration as needed for smoothness
+    await sleep(30); // Delay for smoothness
   }
 
-  // Reverse the pathCells array to apply glow from start to end
+  // Reverse the path to start the glow from the start node
   const reversedPathCells = [...pathCells].reverse();
 
-  // Define the duration of each glow animation in milliseconds
-  const glowDuration = 300; // Increased speed: 300ms per glow
+  // Define animation parameters
+  const glowDuration = 300; // Duration of each glow in milliseconds
+  const pauseDuration = 2000; // Pause between glow loops in milliseconds
 
-  // Define the pause duration after completing a full glow sequence
-  const pauseDuration = 2000; // 2 seconds
-
-  // Get the HTML elements for the path cells
+  // Retrieve HTML elements for the path cells
   const glowElements: HTMLElement[] = reversedPathCells
     .map((cell) => document.getElementById(`cell-${cell.row}-${cell.col}`))
     .filter((el): el is HTMLElement => el !== null);
 
-  // Start the sequential glow loop
+  // Initiate the glow animation
   startSequentialGlowLoop(glowElements, glowDuration, pauseDuration);
 }
