@@ -1,8 +1,8 @@
 import { reactive, computed, nextTick } from 'vue';
-import { gsap } from 'gsap';
 import type { AlgorithmType } from '@/types/AlgorithmType';
 import { animationsEnabled } from './useAnimations';
 import { startSequentialGlowLoop, clearSequentialGlowLoop, clearGlowEffects } from './animations';
+import { gsap } from 'gsap';
 
 export type CellState = 'empty' | 'start' | 'end' | 'wall' | 'visited' | 'path';
 
@@ -25,9 +25,6 @@ export function useGrid() {
   const startNode = reactive({ row: -1, col: -1 });
   const endNode = reactive({ row: -1, col: -1 });
 
-  /**
-   * Initializes the grid with empty cells.
-   */
   function initializeGrid() {
     grid.length = 0;
     for (let row = 0; row < numRows; row++) {
@@ -39,11 +36,6 @@ export function useGrid() {
     }
   }
 
-  /**
-   * Creates a new cell with default properties.
-   * @param row - The row index of the cell.
-   * @param col - The column index of the cell.
-   */
   function createCell(row: number, col: number): Cell {
     return {
       row,
@@ -57,11 +49,11 @@ export function useGrid() {
   }
 
   /**
-   * Updates the state of a specific cell and triggers animations if applicable.
+   * Updates the state of a cell and triggers necessary animations.
    * @param row - The row index of the cell.
    * @param col - The column index of the cell.
-   * @param state - The new state to set for the cell.
-   * @param algorithmType - The algorithm type to lock in for consistent coloring.
+   * @param state - The new state to set.
+   * @param algorithmType - The type of algorithm being visualized.
    */
   function updateCellState(
     row: number,
@@ -75,7 +67,6 @@ export function useGrid() {
     nextTick(() => {
       const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
       if (cellElement) {
-        // Reset inline styles
         cellElement.style.backgroundColor = '';
         cellElement.style.transform = '';
         cellElement.style.boxShadow = '';
@@ -89,40 +80,27 @@ export function useGrid() {
     });
   }
 
-  /**
-   * Animates a visited cell using GSAP.
-   * @param cellElement - The HTML element of the cell to animate.
-   * @param algorithmType - The algorithm type to determine the color.
-   */
   function animateVisitedCell(cellElement: HTMLElement, algorithmType: AlgorithmType) {
     if (!animationsEnabled.value) return;
 
     const targetColor = getVisitedCellColor(algorithmType);
     gsap.to(cellElement, {
       backgroundColor: targetColor,
-      duration: 0.3, // Duration matches the sleep in algorithms
+      duration: 0.3,
       ease: 'power1.inOut',
     });
   }
 
-  /**
-   * Animates a path cell to transition smoothly to yellow using GSAP.
-   * @param cellElement - The HTML element of the cell to animate.
-   */
   function animatePathCell(cellElement: HTMLElement) {
     if (!animationsEnabled.value) return;
 
     gsap.to(cellElement, {
-      backgroundColor: '#FBBF24', // Tailwind's yellow-500
-      duration: 0.3, // Smooth transition duration
+      backgroundColor: '#FBBF24',
+      duration: 0.3,
       ease: 'power1.inOut',
     });
   }
 
-  /**
-   * Determines the color for visited cells based on the algorithm type.
-   * @param algorithmType - The type of algorithm being executed.
-   */
   function getVisitedCellColor(algorithmType: AlgorithmType): string {
     switch (algorithmType) {
       case 'A*':
@@ -138,9 +116,6 @@ export function useGrid() {
     }
   }
 
-  /**
-   * Resets the entire grid, clearing all cells, nodes, walls, and terminating glow effects.
-   */
   function resetGrid() {
     grid.forEach((row) => {
       row.forEach((cell) => {
@@ -153,13 +128,9 @@ export function useGrid() {
     endNode.row = -1;
     endNode.col = -1;
 
-    // Terminate all active glow animations
     clearGlowEffects();
   }
 
-  /**
-   * Resets only the grid state (visited cells and paths), retaining walls and nodes.
-   */
   function resetGridState() {
     grid.forEach((row) => {
       row.forEach((cell) => {
@@ -174,15 +145,9 @@ export function useGrid() {
       });
     });
 
-    // Terminate all active glow animations
     clearGlowEffects();
   }
 
-  /**
-   * Clears inline styles from a specific cell.
-   * @param row - The row index of the cell.
-   * @param col - The column index of the cell.
-   */
   function clearCellInlineStyles(row: number, col: number) {
     nextTick(() => {
       const cellElement = document.getElementById(`cell-${row}-${col}`);
@@ -202,7 +167,7 @@ export function useGrid() {
   return {
     grid,
     initializeGrid,
-    updateCellState, // Updated signature with algorithmType
+    updateCellState,
     resetGrid,
     resetGridState,
     startNode,

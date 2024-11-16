@@ -51,11 +51,11 @@ export default defineComponent({
         case 'wall':
           return 'bg-gray-800';
         case 'visited':
-          return ''; // No background color class; GSAP handles it
+          return ''; // GSAP handles visited cell colors
         case 'path':
-          return ''; // Removed 'bg-yellow-500' to allow GSAP to handle color
+          return ''; // GSAP handles path cell colors
         default:
-          return 'bg-gray-700';
+          return 'bg-gray-700 hover:bg-gray-600 transition-colors duration-200';
       }
     },
   },
@@ -103,5 +103,10 @@ div {
   position: relative;
   overflow: visible;
   cursor: pointer;
+}
+
+/* Optional: Transition for smooth hover effect */
+.transition-colors {
+  transition-property: background-color;
 }
 </style>

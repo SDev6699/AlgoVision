@@ -2,7 +2,7 @@
   <div class="grid-container">
     <div
       class="grid"
-      :style="gridStyle"
+      :style="[gridStyle, cursorStyle]"
       @mousedown="handleMouseDown"
       @mouseup="handleMouseUp"
       @mouseleave="handleMouseLeave"
@@ -47,7 +47,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue';
+import { defineComponent, ref, computed, onUnmounted } from 'vue';
 import CellComponent from './CellComponent.vue';
 import AlgorithmSelector from './AlgorithmSelector.vue';
 import { useGrid } from '@/composables/useGrid';
@@ -61,7 +61,6 @@ export default defineComponent({
     AlgorithmSelector,
   },
   setup() {
-    // Get shared instances of grid and algorithms
     const {
       grid,
       initializeGrid,
@@ -72,91 +71,178 @@ export default defineComponent({
       endNode,
     } = useGrid();
     const { selectedAlgorithm, runAlgorithm } = useAlgorithms();
-    const { statusMessage } = useStatus(); // Shared instance of statusMessage
+    const { statusMessage } = useStatus();
 
-    // Reactive properties
     const isMouseDown = ref(false);
     const isStartNodePlaced = ref(false);
     const isEndNodePlaced = ref(false);
     const isVisualizing = ref(false);
-    const placing = ref<'start' | 'end' | 'wall' | null>(null);
+    const placing = ref<'wall' | null>(null); // Currently, only 'wall' placement is handled
 
-    // Initialize grid immediately
+    // Set to track walls added during the current drag
+    const newWalls = ref<Set<string>>(new Set());
+
+    // Reactive variable to track the current placing mode: 'add' or 'remove'
+    const placingMode = ref<'add' | 'remove' | null>(null);
+
     initializeGrid();
 
-    // Flattened grid for rendering
     const flattenedGrid = computed(() => grid.flat());
 
-    // Style for the grid
     const gridStyle = computed(() => ({
       display: 'grid',
       gridTemplateRows: `repeat(${grid.length}, 20px)`,
       gridTemplateColumns: `repeat(${grid[0].length}, 20px)`,
     }));
 
-    // Check if both start and end nodes are placed
+    // Computed property to determine cursor style based on placingMode
+    const cursorStyle = computed(() => {
+      if (placingMode.value === 'add') {
+        return {
+          cursor: 'crosshair', // Indicates wall addition
+        };
+      } else if (placingMode.value === 'remove') {
+        return {
+          cursor: 'not-allowed', // Indicates wall removal
+        };
+      } else {
+        return {
+          cursor: 'default', // Default cursor
+        };
+      }
+    });
+
     const isStartAndEndPlaced = computed(
       () => isStartNodePlaced.value && isEndNodePlaced.value
     );
 
-    // Mouse event handlers for cell interaction
+    /**
+     * Handles global mouse down event on the grid.
+     * Sets the isMouseDown flag to true.
+     */
     function handleMouseDown() {
       isMouseDown.value = true;
     }
 
+    /**
+     * Handles global mouse up event on the grid.
+     * Resets the isMouseDown flag, clears the placingMode, and resets newWalls.
+     */
     function handleMouseUp() {
       isMouseDown.value = false;
       placing.value = null;
+      placingMode.value = null;
+      newWalls.value.clear(); // Clear the set after drag is complete
     }
 
+    /**
+     * Handles global mouse leave event on the grid.
+     * Resets the isMouseDown flag, clears the placingMode, and resets newWalls.
+     */
     function handleMouseLeave() {
       isMouseDown.value = false;
       placing.value = null;
+      placingMode.value = null;
+      newWalls.value.clear(); // Clear the set if mouse leaves the grid during drag
     }
 
-    // Cell click events for placing start, end, and walls
+    /**
+     * Handles mouse down event on a specific cell.
+     * If start/end nodes are not placed, places them.
+     * Else, toggles wall state with tracking to prevent immediate removal.
+     * Also sets the placingMode based on the initial cell state.
+     * @param row - The row index of the cell.
+     * @param col - The column index of the cell.
+     */
     function onCellMouseDown(row: number, col: number) {
+      const cell = grid[row][col];
+      const cellKey = `${row}-${col}`; // Unique identifier for the cell
+
       if (!isStartNodePlaced.value) {
+        // Place start node
         updateCellState(row, col, 'start', selectedAlgorithm.value);
         startNode.row = row;
         startNode.col = col;
         isStartNodePlaced.value = true;
         statusMessage.value = 'Start node placed.';
       } else if (!isEndNodePlaced.value) {
-        if (grid[row][col].state === 'start') return;
+        // Place end node
+        if (cell.state === 'start') return; // Prevent placing end node on start node
         updateCellState(row, col, 'end', selectedAlgorithm.value);
         endNode.row = row;
         endNode.col = col;
         isEndNodePlaced.value = true;
         statusMessage.value = 'End node placed.';
       } else {
+        // Toggle wall state
         placing.value = 'wall';
-        if (
-          grid[row][col].state !== 'start' &&
-          grid[row][col].state !== 'end'
-        ) {
-          updateCellState(row, col, 'wall', selectedAlgorithm.value);
+
+        if (cell.state === 'wall') {
+          // Initiate wall removal mode
+          if (!newWalls.value.has(cellKey)) {
+            // Only allow removal if the wall was not added during this drag
+            if (cell.state !== 'start' && cell.state !== 'end') {
+              updateCellState(row, col, 'empty', selectedAlgorithm.value);
+              placingMode.value = 'remove';
+            }
+          }
+          // If the wall was added during this drag, do not allow removal
+        } else {
+          // Initiate wall addition mode
+          if (cell.state !== 'start' && cell.state !== 'end') {
+            updateCellState(row, col, 'wall', selectedAlgorithm.value);
+            newWalls.value.add(cellKey); // Track the new wall
+            placingMode.value = 'add';
+          }
         }
       }
     }
 
+    /**
+     * Handles mouse enter event on a specific cell during drag.
+     * Toggles wall state based on existing walls and tracking to prevent immediate removal.
+     * The cursor indicates the current placing mode.
+     * @param row - The row index of the cell.
+     * @param col - The column index of the cell.
+     */
     function onCellMouseEnter(row: number, col: number) {
       if (isMouseDown.value && placing.value === 'wall') {
-        if (
-          grid[row][col].state !== 'start' &&
-          grid[row][col].state !== 'end'
-        ) {
-          updateCellState(row, col, 'wall', selectedAlgorithm.value);
+        const cell = grid[row][col];
+        const cellKey = `${row}-${col}`; // Unique identifier for the cell
+
+        if (cell.state === 'wall') {
+          // Attempt to remove wall
+          if (!newWalls.value.has(cellKey)) {
+            // Only allow removal if the wall was not added during this drag
+            if (cell.state !== 'start' && cell.state !== 'end') {
+              updateCellState(row, col, 'empty', selectedAlgorithm.value);
+            }
+          }
+          // If the wall was added during this drag, do not allow removal
+        } else {
+          // Attempt to add wall
+          if (cell.state !== 'start' && cell.state !== 'end') {
+            updateCellState(row, col, 'wall', selectedAlgorithm.value);
+            newWalls.value.add(cellKey); // Track the new wall
+          }
         }
       }
     }
 
+    /**
+     * Handles mouse up event on a specific cell.
+     * Currently, it resets the drag state and clears newWalls.
+     */
     function onCellMouseUp() {
       isMouseDown.value = false;
       placing.value = null;
+      placingMode.value = null;
+      newWalls.value.clear(); // Clear the set after drag is complete
     }
 
-    // Clear the grid and reset status message
+    /**
+     * Clears the entire grid, removing all walls, start, and end nodes.
+     */
     function clearGrid() {
       resetGrid();
       isStartNodePlaced.value = false;
@@ -164,13 +250,18 @@ export default defineComponent({
       statusMessage.value = 'Grid cleared. Ready to start.';
     }
 
-    // Reset only the grid state (visited cells and paths) and update status message
+    /**
+     * Resets the grid state, removing all visited nodes and paths but keeping walls and start/end nodes.
+     */
     function onResetGridState() {
       resetGridState();
       statusMessage.value = 'Grid reset. You can run the algorithm again.';
     }
 
-    // Run the selected pathfinding algorithm with status updates
+    /**
+     * Initiates the visualization of the selected algorithm.
+     * Ensures that start and end nodes are placed before running.
+     */
     async function visualizeAlgorithm() {
       if (!isStartAndEndPlaced.value) {
         statusMessage.value = 'Please place both the start and end nodes.';
@@ -187,6 +278,14 @@ export default defineComponent({
       statusMessage.value = 'Visualization complete.';
     }
 
+    /**
+     * Clean up function to ensure newWalls and placingMode are cleared if the component is unmounted during a drag.
+     */
+    onUnmounted(() => {
+      newWalls.value.clear();
+      placingMode.value = null;
+    });
+
     return {
       grid,
       flattenedGrid,
@@ -198,13 +297,14 @@ export default defineComponent({
       onCellMouseEnter,
       onCellMouseUp,
       gridStyle,
+      cursorStyle,
       clearGrid,
       onResetGridState,
       visualizeAlgorithm,
       isStartAndEndPlaced,
       isVisualizing,
       selectedAlgorithm,
-      statusMessage, // Export statusMessage to make it reactive in the component
+      statusMessage,
     };
   },
 });
@@ -212,11 +312,12 @@ export default defineComponent({
 
 <style scoped>
 .grid-container {
-  overflow: visible; /* Ensure overflow is visible */
+  overflow: visible;
 }
 .grid {
   margin: 0 auto;
   user-select: none;
+  /* Cursor is dynamically set via inline styles using cursorStyle computed property */
 }
 .controls {
   text-align: center;
