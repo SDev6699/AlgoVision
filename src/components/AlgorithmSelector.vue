@@ -4,7 +4,8 @@
     <select
       id="algorithm"
       v-model="selectedAlgorithm"
-      class="bg-gray-800 text-white px-4 py-2 rounded"
+      :disabled="disabled"
+      class="bg-gray-800 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <option value="A*">A*</option>
       <option value="Dijkstra">Dijkstra's</option>
@@ -15,12 +16,18 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, watch } from 'vue';
+import { defineComponent, watch, PropType } from 'vue';
 import { useAlgorithms } from '@/composables/useAlgorithms';
 
 export default defineComponent({
   name: 'AlgorithmSelector',
-  setup() {
+  props: {
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  setup(props) {
     const { selectedAlgorithm } = useAlgorithms();
 
     // Watch for changes in selectedAlgorithm to confirm updates
@@ -30,6 +37,7 @@ export default defineComponent({
 
     return {
       selectedAlgorithm,
+      disabled: props.disabled,
     };
   },
 });

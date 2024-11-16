@@ -1,6 +1,6 @@
 import { reactive, computed, nextTick } from 'vue';
 import { gsap } from 'gsap';
-import { selectedAlgorithm } from './useAlgorithms';
+import type { AlgorithmType } from '@/types/AlgorithmType';
 import { animationsEnabled } from './useAnimations';
 import { startSequentialGlowLoop, clearSequentialGlowLoop, clearGlowEffects } from './animations';
 
@@ -61,8 +61,14 @@ export function useGrid() {
    * @param row - The row index of the cell.
    * @param col - The column index of the cell.
    * @param state - The new state to set for the cell.
+   * @param algorithmType - The algorithm type to lock in for consistent coloring.
    */
-  function updateCellState(row: number, col: number, state: CellState) {
+  function updateCellState(
+    row: number,
+    col: number,
+    state: CellState,
+    algorithmType: AlgorithmType
+  ) {
     const cell = grid[row][col];
     cell.state = state;
 
@@ -75,7 +81,7 @@ export function useGrid() {
         cellElement.style.boxShadow = '';
 
         if (state === 'visited') {
-          animateVisitedCell(cellElement);
+          animateVisitedCell(cellElement, algorithmType);
         } else if (state === 'path') {
           animatePathCell(cellElement);
         }
@@ -86,11 +92,12 @@ export function useGrid() {
   /**
    * Animates a visited cell using GSAP.
    * @param cellElement - The HTML element of the cell to animate.
+   * @param algorithmType - The algorithm type to determine the color.
    */
-  function animateVisitedCell(cellElement: HTMLElement) {
+  function animateVisitedCell(cellElement: HTMLElement, algorithmType: AlgorithmType) {
     if (!animationsEnabled.value) return;
 
-    const targetColor = getVisitedCellColor();
+    const targetColor = getVisitedCellColor(algorithmType);
     gsap.to(cellElement, {
       backgroundColor: targetColor,
       duration: 0.3, // Duration matches the sleep in algorithms
@@ -113,10 +120,11 @@ export function useGrid() {
   }
 
   /**
-   * Determines the color for visited cells based on the selected algorithm.
+   * Determines the color for visited cells based on the algorithm type.
+   * @param algorithmType - The type of algorithm being executed.
    */
-  function getVisitedCellColor(): string {
-    switch (selectedAlgorithm.value) {
+  function getVisitedCellColor(algorithmType: AlgorithmType): string {
+    switch (algorithmType) {
       case 'A*':
         return '#3B82F6'; // Blue
       case 'BFS':
@@ -194,7 +202,7 @@ export function useGrid() {
   return {
     grid,
     initializeGrid,
-    updateCellState,
+    updateCellState, // Updated signature with algorithmType
     resetGrid,
     resetGridState,
     startNode,

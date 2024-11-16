@@ -18,7 +18,7 @@
       />
     </div>
     <div class="controls mt-4 space-y-4">
-      <AlgorithmSelector />
+      <AlgorithmSelector :disabled="isVisualizing" />
       <div class="buttons flex items-center justify-center space-x-2">
         <button
           class="bg-blue-500 text-white px-4 py-2 rounded"
@@ -30,12 +30,14 @@
         <button
           class="bg-gray-500 text-white px-4 py-2 rounded"
           @click="clearGrid"
+          :disabled="isVisualizing"
         >
           Clear Grid
         </button>
         <button
           class="bg-gray-500 text-white px-4 py-2 rounded"
           @click="onResetGridState"
+          :disabled="isVisualizing"
         >
           Reset
         </button>
@@ -115,14 +117,14 @@ export default defineComponent({
     // Cell click events for placing start, end, and walls
     function onCellMouseDown(row: number, col: number) {
       if (!isStartNodePlaced.value) {
-        updateCellState(row, col, 'start');
+        updateCellState(row, col, 'start', selectedAlgorithm.value);
         startNode.row = row;
         startNode.col = col;
         isStartNodePlaced.value = true;
         statusMessage.value = 'Start node placed.';
       } else if (!isEndNodePlaced.value) {
         if (grid[row][col].state === 'start') return;
-        updateCellState(row, col, 'end');
+        updateCellState(row, col, 'end', selectedAlgorithm.value);
         endNode.row = row;
         endNode.col = col;
         isEndNodePlaced.value = true;
@@ -133,7 +135,7 @@ export default defineComponent({
           grid[row][col].state !== 'start' &&
           grid[row][col].state !== 'end'
         ) {
-          updateCellState(row, col, 'wall');
+          updateCellState(row, col, 'wall', selectedAlgorithm.value);
         }
       }
     }
@@ -144,7 +146,7 @@ export default defineComponent({
           grid[row][col].state !== 'start' &&
           grid[row][col].state !== 'end'
         ) {
-          updateCellState(row, col, 'wall');
+          updateCellState(row, col, 'wall', selectedAlgorithm.value);
         }
       }
     }
