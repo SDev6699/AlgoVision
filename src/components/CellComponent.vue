@@ -5,6 +5,9 @@
     @mousedown="handleMouseDown"
     @mouseenter="handleMouseEnter"
     @mouseup="handleMouseUp"
+    :aria-label="getAriaLabel()"
+    role="button"
+    tabindex="0"
   >
     <span v-if="cell.state === 'start'" class="text-white">S</span>
     <span v-else-if="cell.state === 'end'" class="text-white">E</span>
@@ -68,6 +71,22 @@ export default defineComponent({
     handleMouseUp() {
       this.$emit('cellMouseUp');
     },
+    getAriaLabel(): string {
+      switch (this.cell.state) {
+        case 'start':
+          return 'Start Node';
+        case 'end':
+          return 'End Node';
+        case 'wall':
+          return 'Wall';
+        case 'visited':
+          return 'Visited Node';
+        case 'path':
+          return 'Path Node';
+        default:
+          return 'Empty Node';
+      }
+    },
   },
 });
 </script>
@@ -83,5 +102,6 @@ div {
   user-select: none;
   position: relative;
   overflow: visible;
+  cursor: pointer;
 }
 </style>

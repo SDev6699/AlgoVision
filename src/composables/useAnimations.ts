@@ -1,10 +1,10 @@
 import { ref } from 'vue';
 
-// Reactive reference to manage whether animations are enabled
 export const animationsEnabled = ref(true);
 
-export function useAnimations() {
-  return {
-    animationsEnabled,
-  };
+/**
+ * Toggles the animations on or off.
+ */
+export function toggleAnimations() {
+  animationsEnabled.value = !animationsEnabled.value;
 }

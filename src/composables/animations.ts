@@ -1,56 +1,73 @@
 import { animationsEnabled } from './useAnimations';
 import { gsap } from 'gsap';
 
-// Map to keep track of active glow timelines by cell ID
+// Map to keep track of active glow timelines by unique identifiers
 const activeGlowTimelines: Map<string, gsap.core.Timeline> = new Map();
 
-// Array to keep track of pending glow timeouts
-const glowTimeouts: number[] = [];
-
 /**
- * Starts a glow effect on the specified cell element.
- * Prevents multiple timelines on the same cell.
- * @param cellElement - The HTML element of the cell to animate.
+ * Starts a sequential glow loop that flows from start to end.
+ * Each glow starts after the previous one completes.
+ * After completing the sequence, waits for a specified pause before repeating.
+ * @param pathCells - Array of HTML elements representing the path cells.
+ * @param glowDuration - Duration of each glow animation in milliseconds.
+ * @param repeatDelay - Delay before the glow sequence repeats, in milliseconds.
  */
-export function startGlowEffect(cellElement: HTMLElement) {
+export function startSequentialGlowLoop(
+  pathCells: HTMLElement[],
+  glowDuration: number = 300,
+  repeatDelay: number = 2000
+) {
   if (!animationsEnabled.value) return;
 
-  const cellId = cellElement.id;
+  // Unique identifier for the sequential glow timeline
+  const timelineId = 'sequentialGlow';
 
-  // If a glow effect is already active on this cell, do nothing
-  if (activeGlowTimelines.has(cellId)) return;
+  // If a sequential glow timeline already exists, kill it before creating a new one
+  if (activeGlowTimelines.has(timelineId)) {
+    const existingTimeline = activeGlowTimelines.get(timelineId);
+    existingTimeline?.kill();
+    activeGlowTimelines.delete(timelineId);
+  }
 
-  // Create a new timeline for the glow effect
-  const glowTimeline = gsap.timeline({ repeat: -1, yoyo: true });
+  // Create a new timeline for the sequential glow loop
+  const glowTimeline = gsap.timeline({
+    repeat: -1, // Infinite repeats
+    repeatDelay: repeatDelay / 1000, // Convert ms to seconds
+  });
 
-  glowTimeline.fromTo(
-    cellElement,
-    { boxShadow: '0 0 0px 0px rgba(255, 255, 0, 0.0)' },
-    {
-      boxShadow: '0 0 15px 10px rgba(255, 255, 0, 0.5)',
-      duration: 0.5,
-      ease: 'sine.inOut',
-    }
-  );
+  pathCells.forEach((cell) => {
+    glowTimeline.fromTo(
+      cell,
+      { boxShadow: '0 0 0px 0px rgba(255, 255, 0, 0.0)' },
+      {
+        boxShadow: '0 0 15px 10px rgba(255, 255, 0, 0.5)',
+        duration: glowDuration / 1000, // Convert ms to seconds
+        ease: 'sine.inOut',
+      }
+    ).to(
+      cell,
+      {
+        boxShadow: '0 0 0px 0px rgba(255, 255, 0, 0.0)',
+        duration: glowDuration / 1000,
+        ease: 'sine.inOut',
+      }
+    );
+  });
 
-  // Store the timeline with the cell ID as the key
-  activeGlowTimelines.set(cellId, glowTimeline);
+  // Store the timeline with its unique identifier
+  activeGlowTimelines.set(timelineId, glowTimeline);
 }
 
 /**
- * Starts a glow effect on the specified cell element after a delay.
- * Tracks the timeout ID to allow for clearing.
- * @param cellElement - The HTML element of the cell to animate.
- * @param delay - The delay in milliseconds before starting the glow.
+ * Clears the sequential glow loop if it exists.
  */
-export function startGlowEffectWithDelay(cellElement: HTMLElement, delay: number) {
-  if (!animationsEnabled.value) return;
-
-  const timeoutId = window.setTimeout(() => {
-    startGlowEffect(cellElement);
-  }, delay);
-
-  glowTimeouts.push(timeoutId);
+export function clearSequentialGlowLoop() {
+  const timelineId = 'sequentialGlow';
+  const timeline = activeGlowTimelines.get(timelineId);
+  if (timeline) {
+    timeline.kill();
+    activeGlowTimelines.delete(timelineId);
+  }
 }
 
 /**
@@ -60,8 +77,4 @@ export function clearGlowEffects() {
   // Kill all active timelines
   activeGlowTimelines.forEach((timeline) => timeline.kill());
   activeGlowTimelines.clear();
-
-  // Clear all pending timeouts
-  glowTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
-  glowTimeouts.length = 0; // Reset the array
 }

@@ -2,7 +2,7 @@ import { reactive, computed, nextTick } from 'vue';
 import { gsap } from 'gsap';
 import { selectedAlgorithm } from './useAlgorithms';
 import { animationsEnabled } from './useAnimations';
-import { startGlowEffect, clearGlowEffects } from './animations';
+import { startSequentialGlowLoop, clearSequentialGlowLoop, clearGlowEffects } from './animations';
 
 export type CellState = 'empty' | 'start' | 'end' | 'wall' | 'visited' | 'path';
 

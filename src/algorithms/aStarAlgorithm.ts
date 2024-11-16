@@ -1,6 +1,6 @@
 import type { Cell, CellState } from '@/composables/useGrid';
 import { sleep } from '@/utils/sleep';
-import { startGlowEffectWithDelay } from '@/composables/animations';
+import { startSequentialGlowLoop, clearSequentialGlowLoop } from '@/composables/animations';
 import { gsap } from 'gsap';
 
 export async function aStarAlgorithm(
@@ -117,12 +117,17 @@ async function drawPath(
   // Reverse the pathCells array to apply glow from start to end
   const reversedPathCells = [...pathCells].reverse();
 
-  // Apply glow effect to the path cells with staggered delays
-  for (const [index, cell] of reversedPathCells.entries()) {
-    const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
-    if (cellElement) {
-      // Start the glow effect with a slight delay between cells
-      startGlowEffectWithDelay(cellElement, index * 100); // 100ms delay between each glow start
-    }
-  }
+  // Define the duration of each glow animation in milliseconds
+  const glowDuration = 300; // Increased speed: 300ms per glow
+
+  // Define the pause duration after completing a full glow sequence
+  const pauseDuration = 2000; // 2 seconds
+
+  // Get the HTML elements for the path cells
+  const glowElements: HTMLElement[] = reversedPathCells
+    .map((cell) => document.getElementById(`cell-${cell.row}-${cell.col}`))
+    .filter((el): el is HTMLElement => el !== null);
+
+  // Start the sequential glow loop
+  startSequentialGlowLoop(glowElements, glowDuration, pauseDuration);
 }
