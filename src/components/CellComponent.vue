@@ -17,6 +17,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import { useAlgorithms } from '@/composables/useAlgorithms';
+import { animationsEnabled } from '@/composables/useAnimations'; // Import animationsEnabled
 import type { CellState } from '@/composables/useGrid';
 
 export default defineComponent({
@@ -39,6 +40,7 @@ export default defineComponent({
     const { selectedAlgorithm } = useAlgorithms();
     return {
       selectedAlgorithm,
+      animationsEnabled, // Make animationsEnabled available in the template
     };
   },
   computed: {
@@ -61,10 +63,18 @@ export default defineComponent({
           classes = ''; // GSAP handles path cell colors
           break;
         default:
-          classes = 'bg-gray-700 hover:bg-gray-600';
+          classes = 'bg-gray-700 hover:bg-gray-600 transition-colors duration-200';
       }
       // Append common classes for scaling on hover
       classes += ' transform transition-transform duration-200 hover:scale-105';
+      
+      // Conditionally add the 'pulse' class for start and end nodes if animations are enabled
+      if (
+        (this.cell.state === 'start' || this.cell.state === 'end') &&
+        animationsEnabled.value
+      ) {
+        classes += ' pulse';
+      }
       return classes;
     },
   },
@@ -101,6 +111,25 @@ export default defineComponent({
 </script>
 
 <style scoped>
+/* Define keyframes for pulsing effect without glow */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Apply the pulsing animation */
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Existing cell styles */
 div {
   width: 20px;
   height: 20px;
