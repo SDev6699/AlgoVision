@@ -43,20 +43,29 @@ export default defineComponent({
   },
   computed: {
     cellClass(): string {
+      let classes = '';
       switch (this.cell.state) {
         case 'start':
-          return 'bg-green-500 flex items-center justify-center';
+          classes = 'bg-green-500 flex items-center justify-center';
+          break;
         case 'end':
-          return 'bg-red-500 flex items-center justify-center';
+          classes = 'bg-red-500 flex items-center justify-center';
+          break;
         case 'wall':
-          return 'bg-gray-800';
+          classes = 'bg-gray-800';
+          break;
         case 'visited':
-          return ''; // GSAP handles visited cell colors
+          classes = ''; // GSAP handles visited cell colors
+          break;
         case 'path':
-          return ''; // GSAP handles path cell colors
+          classes = ''; // GSAP handles path cell colors
+          break;
         default:
-          return 'bg-gray-700 hover:bg-gray-600 transition-colors duration-200';
+          classes = 'bg-gray-700 hover:bg-gray-600';
       }
+      // Append common classes for scaling on hover
+      classes += ' transform transition-transform duration-200 hover:scale-105';
+      return classes;
     },
   },
   methods: {
