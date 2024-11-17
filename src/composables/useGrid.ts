@@ -50,10 +50,6 @@ export function useGrid() {
 
   /**
    * Updates the state of a cell and triggers necessary animations.
-   * @param row - The row index of the cell.
-   * @param col - The column index of the cell.
-   * @param state - The new state to set.
-   * @param algorithmType - The type of algorithm being visualized.
    */
   function updateCellState(
     row: number,
@@ -62,15 +58,27 @@ export function useGrid() {
     algorithmType: AlgorithmType
   ) {
     const cell = grid[row][col];
+    const previousState = cell.state;
     cell.state = state;
 
     nextTick(() => {
       const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
       if (cellElement) {
-        cellElement.style.backgroundColor = '';
+        cellElement.style.backgroundColor = ''; // Reset any inline styles
         cellElement.style.transform = '';
         cellElement.style.boxShadow = '';
 
+        // Trigger wall placement animation
+        if (state === 'wall') {
+          animateWallPlacement(cellElement);
+        }
+
+        // Trigger wall removal animation
+        if (previousState === 'wall' && state === 'empty') {
+          animateWallRemoval(cellElement);
+        }
+
+        // Existing animations
         if (state === 'visited') {
           animateVisitedCell(cellElement, algorithmType);
         } else if (state === 'path') {
@@ -78,6 +86,40 @@ export function useGrid() {
         }
       }
     });
+  }
+
+  /**
+   * Animates the placement of a wall.
+   */
+  function animateWallPlacement(cellElement: HTMLElement) {
+    if (!animationsEnabled.value) return;
+
+    gsap.fromTo(
+      cellElement,
+      { backgroundColor: '#374151' }, // Current 'empty' state color
+      {
+        backgroundColor: '#1F2937', // Wall color (darker gray)
+        duration: 0.3,
+        ease: 'power1.inOut',
+      }
+    );
+  }
+
+  /**
+   * Animates the removal of a wall.
+   */
+  function animateWallRemoval(cellElement: HTMLElement) {
+    if (!animationsEnabled.value) return;
+
+    gsap.fromTo(
+      cellElement,
+      { backgroundColor: '#1F2937' }, // Current 'wall' color
+      {
+        backgroundColor: '#374151', // 'Empty' state color
+        duration: 0.3,
+        ease: 'power1.inOut',
+      }
+    );
   }
 
   function animateVisitedCell(cellElement: HTMLElement, algorithmType: AlgorithmType) {
