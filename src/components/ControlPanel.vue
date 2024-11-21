@@ -32,7 +32,7 @@
 <script lang="ts">
 import { defineComponent, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { gsap } from 'gsap';
-import { animationsEnabled, currentPathCells, currentGlowTimeline } from '@/composables/useAnimations';
+import { animationsEnabled, currentPathCells, currentGlowTimeline, glowSpeedMultiplier } from '@/composables/useAnimations';
 import { clearGlowEffects, startSequentialGlowLoop } from '@/composables/animations';
 
 export default defineComponent({
@@ -41,33 +41,29 @@ export default defineComponent({
   setup(props, { emit }) {
     const controlPanel = ref<HTMLElement | null>(null);
 
-    /**
-     * Closes the control panel by emitting a 'close' event.
-     */
     function closePanel() {
       emit('close');
     }
 
     /**
-     * Watch for changes in animationsEnabled and toggle animations accordingly.
-     * When animations are disabled, pause the glow animation and reset styles.
-     * When re-enabled, resume the glow animation if it exists.
+     * Watch for changes in animationsEnabled and manage glow animations accordingly.
      */
     watch(animationsEnabled, (newVal) => {
       console.log(`Animations Enabled: ${newVal}`);
       if (!newVal) {
         clearGlowEffects(); // Pause the glow animation and reset styles
       } else {
-        // If animations are re-enabled and there is a path displayed, resume the glow animation
+        // Animations have been re-enabled, speed multiplier is already increased in toggleAnimations
+        // Resume or start the glow animation
         if (currentGlowTimeline.value) {
+          currentGlowTimeline.value.timeScale(glowSpeedMultiplier.value);
           currentGlowTimeline.value.resume();
         } else if (currentPathCells.value.length > 0) {
-          // If no timeline exists, start it
-          const glowDuration = 300; // Duration of each glow in milliseconds
-          const pauseDuration = 2000; // Pause between glow loops in milliseconds
+          const glowDuration = 2000; // Base duration
+          const repeatDelay = 1000; // Base pause duration
+          const glowLength = 5; // Number of cells glowing at once
 
-          // Start the glow animation
-          startSequentialGlowLoop(currentPathCells.value, glowDuration, pauseDuration);
+          startSequentialGlowLoop(currentPathCells.value, glowDuration, repeatDelay, glowLength);
         }
       }
     });

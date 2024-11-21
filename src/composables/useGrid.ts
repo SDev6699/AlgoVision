@@ -1,7 +1,7 @@
 import { reactive, computed, nextTick } from 'vue';
 import type { AlgorithmType } from '@/types/AlgorithmType';
-import { animationsEnabled } from './useAnimations';
-import { startSequentialGlowLoop, clearGlowEffects, currentGlowTimeline, currentPathCells } from './animations';
+import { animationsEnabled, currentGlowTimeline, currentPathCells, glowSpeedMultiplier } from './useAnimations';
+import { startSequentialGlowLoop, clearGlowEffects } from './animations';
 import { gsap } from 'gsap';
 
 export type CellState = 'empty' | 'start' | 'end' | 'wall' | 'visited' | 'path';
@@ -104,15 +104,6 @@ export function useGrid() {
             cellElement.style.backgroundColor = targetColor;
           }
         }
-
-        // Handle 'path' state again for clarity
-        else if (state === 'path') {
-          if (animationsEnabled.value) {
-            animatePathCell(cellElement);
-          } else {
-            cellElement.style.backgroundColor = '#FBBF24'; // Path color
-          }
-        }
       }
     });
   }
@@ -202,6 +193,8 @@ export function useGrid() {
     clearGlowEffects(); // Ensures glow animations are cleared
     currentPathCells.value = []; // Clear stored path cells
     currentGlowTimeline.value = null; // Clear the glow timeline
+
+    glowSpeedMultiplier.value = 1; // Reset speed multiplier
   }
 
   function resetGridState() {
@@ -221,6 +214,8 @@ export function useGrid() {
     clearGlowEffects(); // Ensures glow animations are cleared
     currentPathCells.value = []; // Clear stored path cells
     currentGlowTimeline.value = null; // Clear the glow timeline
+
+    glowSpeedMultiplier.value = 1; // Reset speed multiplier
   }
 
   function clearCellInlineStyles(row: number, col: number) {

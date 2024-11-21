@@ -2,7 +2,7 @@ import type { Cell, CellState } from '@/composables/useGrid';
 import type { Ref } from 'vue';
 import { startSequentialGlowLoop } from '@/composables/animations';
 import { sleep } from '@/utils/sleep';
-import { currentPathCells, animationsEnabled } from '@/composables/useAnimations'; // Import animationsEnabled
+import { currentPathCells, animationsEnabled } from '@/composables/useAnimations';
 
 /**
  * Implements Dijkstra's pathfinding algorithm.
@@ -132,9 +132,10 @@ async function drawPath(
 
   // Initiate the glow animation if animations are enabled
   if (animationsEnabled.value) {
-    const glowDuration = 300; // Duration of each glow in milliseconds
-    const pauseDuration = 2000; // Pause between glow loops in milliseconds
+    const glowDuration = 2000; // Total duration of the glow animation
+    const repeatDelay = 1000; // Delay between glow loops
+    const glowLength = 5; // Number of cells glowing at once
 
-    startSequentialGlowLoop(glowElements, glowDuration, pauseDuration);
+    startSequentialGlowLoop(glowElements, glowDuration, repeatDelay, glowLength);
   }
 }

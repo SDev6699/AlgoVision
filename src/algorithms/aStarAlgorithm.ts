@@ -1,8 +1,11 @@
 import type { Cell, CellState } from '@/composables/useGrid';
 import { sleep } from '@/utils/sleep';
 import { startSequentialGlowLoop } from '@/composables/animations';
-import { currentPathCells, animationsEnabled } from '@/composables/useAnimations'; // Import animationsEnabled
+import { currentPathCells, animationsEnabled } from '@/composables/useAnimations';
 
+/**
+ * Implements A* pathfinding algorithm.
+ */
 export async function aStarAlgorithm(
   grid: Cell[][],
   startNode: { row: number; col: number },
@@ -23,7 +26,7 @@ export async function aStarAlgorithm(
 
   startCell.gCost = 0;
   startCell.hCost = heuristic(startCell, endCell);
-  startCell.fCost = startCell.hCost;
+  startCell.fCost = startCell.gCost + startCell.hCost;
 
   openSet.push(startCell);
 
@@ -137,9 +140,10 @@ async function drawPath(
 
   // Initiate the glow animation if animations are enabled
   if (animationsEnabled.value) {
-    const glowDuration = 300; // Duration of each glow in milliseconds
-    const pauseDuration = 2000; // Pause between glow loops in milliseconds
+    const glowDuration = 2000; // Total duration of the glow animation
+    const repeatDelay = 1000; // Delay between glow loops
+    const glowLength = 5; // Number of cells glowing at once
 
-    startSequentialGlowLoop(glowElements, glowDuration, pauseDuration);
+    startSequentialGlowLoop(glowElements, glowDuration, repeatDelay, glowLength);
   }
 }
