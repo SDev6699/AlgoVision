@@ -21,21 +21,24 @@
       <AlgorithmSelector :disabled="isVisualizing" />
       <div class="buttons flex items-center justify-center space-x-2">
         <button
-          class="bg-blue-500 text-white px-4 py-2 rounded"
+          ref="visualizeBtn"
+          class="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           @click="visualizeAlgorithm"
           :disabled="!isStartAndEndPlaced || isVisualizing"
         >
           Visualize Algorithm
         </button>
         <button
-          class="bg-gray-500 text-white px-4 py-2 rounded"
+          ref="clearBtn"
+          class="bg-gray-500 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           @click="clearGrid"
           :disabled="isVisualizing"
         >
           Clear Grid
         </button>
         <button
-          class="bg-gray-500 text-white px-4 py-2 rounded"
+          ref="resetBtn"
+          class="bg-gray-500 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           @click="onResetGridState"
           :disabled="isVisualizing"
         >
@@ -47,12 +50,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onUnmounted } from 'vue';
+import { defineComponent, ref, computed, onMounted, onUnmounted } from 'vue';
 import CellComponent from './CellComponent.vue';
 import AlgorithmSelector from './AlgorithmSelector.vue';
 import { useGrid } from '@/composables/useGrid';
 import { useAlgorithms } from '@/composables/useAlgorithms';
 import { useStatus } from '@/composables/useStatus';
+import { gsap } from 'gsap';
 
 export default defineComponent({
   name: 'GridComponent',
@@ -116,18 +120,10 @@ export default defineComponent({
       () => isStartNodePlaced.value && isEndNodePlaced.value
     );
 
-    /**
-     * Handles global mouse down event on the grid.
-     * Sets the isMouseDown flag to true.
-     */
     function handleMouseDown() {
       isMouseDown.value = true;
     }
 
-    /**
-     * Handles global mouse up event on the grid.
-     * Resets the isMouseDown flag, clears the placingMode, and resets newWalls.
-     */
     function handleMouseUp() {
       isMouseDown.value = false;
       placing.value = null;
@@ -135,10 +131,6 @@ export default defineComponent({
       newWalls.value.clear(); // Clear the set after drag is complete
     }
 
-    /**
-     * Handles global mouse leave event on the grid.
-     * Resets the isMouseDown flag, clears the placingMode, and resets newWalls.
-     */
     function handleMouseLeave() {
       isMouseDown.value = false;
       placing.value = null;
@@ -146,14 +138,6 @@ export default defineComponent({
       newWalls.value.clear(); // Clear the set if mouse leaves the grid during drag
     }
 
-    /**
-     * Handles mouse down event on a specific cell.
-     * If start/end nodes are not placed, places them.
-     * Else, toggles wall state with tracking to prevent immediate removal.
-     * Also sets the placingMode based on the initial cell state.
-     * @param row - The row index of the cell.
-     * @param col - The column index of the cell.
-     */
     function onCellMouseDown(row: number, col: number) {
       const cell = grid[row][col];
       const cellKey = `${row}-${col}`; // Unique identifier for the cell
@@ -174,6 +158,11 @@ export default defineComponent({
         isEndNodePlaced.value = true;
         statusMessage.value = 'End node placed.';
       } else {
+        // Ensure we don't modify start or end nodes
+        if (cell.state === 'start' || cell.state === 'end') {
+          return;
+        }
+
         // Toggle wall state
         placing.value = 'wall';
 
@@ -181,58 +170,44 @@ export default defineComponent({
           // Initiate wall removal mode
           if (!newWalls.value.has(cellKey)) {
             // Only allow removal if the wall was not added during this drag
-            if (cell.state !== 'start' && cell.state !== 'end') {
-              updateCellState(row, col, 'empty', selectedAlgorithm.value);
-              placingMode.value = 'remove';
-            }
+            updateCellState(row, col, 'empty', selectedAlgorithm.value);
+            placingMode.value = 'remove';
           }
           // If the wall was added during this drag, do not allow removal
         } else {
           // Initiate wall addition mode
-          if (cell.state !== 'start' && cell.state !== 'end') {
-            updateCellState(row, col, 'wall', selectedAlgorithm.value);
-            newWalls.value.add(cellKey); // Track the new wall
-            placingMode.value = 'add';
-          }
+          updateCellState(row, col, 'wall', selectedAlgorithm.value);
+          newWalls.value.add(cellKey); // Track the new wall
+          placingMode.value = 'add';
         }
       }
     }
 
-    /**
-     * Handles mouse enter event on a specific cell during drag.
-     * Toggles wall state based on existing walls and tracking to prevent immediate removal.
-     * The cursor indicates the current placing mode.
-     * @param row - The row index of the cell.
-     * @param col - The column index of the cell.
-     */
     function onCellMouseEnter(row: number, col: number) {
       if (isMouseDown.value && placing.value === 'wall') {
         const cell = grid[row][col];
         const cellKey = `${row}-${col}`; // Unique identifier for the cell
 
+        // Ensure we don't modify start or end nodes
+        if (cell.state === 'start' || cell.state === 'end') {
+          return;
+        }
+
         if (cell.state === 'wall') {
           // Attempt to remove wall
           if (!newWalls.value.has(cellKey)) {
             // Only allow removal if the wall was not added during this drag
-            if (cell.state !== 'start' && cell.state !== 'end') {
-              updateCellState(row, col, 'empty', selectedAlgorithm.value);
-            }
+            updateCellState(row, col, 'empty', selectedAlgorithm.value);
           }
           // If the wall was added during this drag, do not allow removal
         } else {
           // Attempt to add wall
-          if (cell.state !== 'start' && cell.state !== 'end') {
-            updateCellState(row, col, 'wall', selectedAlgorithm.value);
-            newWalls.value.add(cellKey); // Track the new wall
-          }
+          updateCellState(row, col, 'wall', selectedAlgorithm.value);
+          newWalls.value.add(cellKey); // Track the new wall
         }
       }
     }
 
-    /**
-     * Handles mouse up event on a specific cell.
-     * Currently, it resets the drag state and clears newWalls.
-     */
     function onCellMouseUp() {
       isMouseDown.value = false;
       placing.value = null;
@@ -240,9 +215,6 @@ export default defineComponent({
       newWalls.value.clear(); // Clear the set after drag is complete
     }
 
-    /**
-     * Clears the entire grid, removing all walls, start, and end nodes.
-     */
     function clearGrid() {
       resetGrid();
       isStartNodePlaced.value = false;
@@ -250,18 +222,11 @@ export default defineComponent({
       statusMessage.value = 'Grid cleared. Ready to start.';
     }
 
-    /**
-     * Resets the grid state, removing all visited nodes and paths but keeping walls and start/end nodes.
-     */
     function onResetGridState() {
       resetGridState();
       statusMessage.value = 'Grid reset. You can run the algorithm again.';
     }
 
-    /**
-     * Initiates the visualization of the selected algorithm.
-     * Ensures that start and end nodes are placed before running.
-     */
     async function visualizeAlgorithm() {
       if (!isStartAndEndPlaced.value) {
         statusMessage.value = 'Please place both the start and end nodes.';
@@ -278,12 +243,65 @@ export default defineComponent({
       statusMessage.value = 'Visualization complete.';
     }
 
-    /**
-     * Clean up function to ensure newWalls and placingMode are cleared if the component is unmounted during a drag.
-     */
     onUnmounted(() => {
       newWalls.value.clear();
       placingMode.value = null;
+    });
+
+    // Refs for buttons
+    const visualizeBtn = ref<HTMLButtonElement | null>(null);
+    const clearBtn = ref<HTMLButtonElement | null>(null);
+    const resetBtn = ref<HTMLButtonElement | null>(null);
+
+    onMounted(() => {
+      const buttons = [
+        { ref: visualizeBtn, name: 'Visualize Algorithm' },
+        { ref: clearBtn, name: 'Clear Grid' },
+        { ref: resetBtn, name: 'Reset' },
+      ];
+
+      buttons.forEach((button) => {
+        const btn = button.ref.value;
+        if (btn) {
+          // Hover animations
+          btn.addEventListener('mouseenter', () => {
+            if (!btn.disabled) {
+              gsap.to(btn, { scale: 1.05, duration: 0.2, ease: 'power1.out' });
+            }
+          });
+
+          btn.addEventListener('mouseleave', () => {
+            if (!btn.disabled) {
+              gsap.to(btn, { scale: 1, duration: 0.2, ease: 'power1.out' });
+            }
+          });
+
+          // Tactile response animations
+          btn.addEventListener('mousedown', () => {
+            if (!btn.disabled) {
+              gsap.to(btn, { scale: 0.95, duration: 0.1, ease: 'power1.out' });
+            }
+          });
+
+          btn.addEventListener('mouseup', () => {
+            if (!btn.disabled) {
+              gsap.to(btn, { scale: 1, duration: 0.1, ease: 'power1.out' });
+            }
+          });
+
+          btn.addEventListener('touchstart', () => {
+            if (!btn.disabled) {
+              gsap.to(btn, { scale: 0.95, duration: 0.1, ease: 'power1.out' });
+            }
+          });
+
+          btn.addEventListener('touchend', () => {
+            if (!btn.disabled) {
+              gsap.to(btn, { scale: 1, duration: 0.1, ease: 'power1.out' });
+            }
+          });
+        }
+      });
     });
 
     return {
@@ -305,6 +323,10 @@ export default defineComponent({
       isVisualizing,
       selectedAlgorithm,
       statusMessage,
+      // Button refs
+      visualizeBtn,
+      clearBtn,
+      resetBtn,
     };
   },
 });
@@ -317,7 +339,6 @@ export default defineComponent({
 .grid {
   margin: 0 auto;
   user-select: none;
-  /* Cursor is dynamically set via inline styles using cursorStyle computed property */
 }
 .controls {
   text-align: center;

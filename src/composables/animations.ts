@@ -17,7 +17,7 @@ export function startSequentialGlowLoop(
   glowDuration: number = 300,
   repeatDelay: number = 2000
 ) {
-  if (!animationsEnabled.value) return;
+  if (!animationsEnabled.value) return; // Prevent starting animations if disabled
 
   // Unique identifier for the sequential glow timeline
   const timelineId = 'sequentialGlow';
@@ -72,8 +72,12 @@ export function clearSequentialGlowLoop() {
 
 /**
  * Clears all active glow effects by killing their timelines and clearing pending timeouts.
+ * This function now always clears glow effects, regardless of the animationsEnabled state.
  */
 export function clearGlowEffects() {
+  // Removed the early return to ensure all glow animations are cleared
+  // regardless of the current animationsEnabled state.
+
   // Kill all active timelines
   activeGlowTimelines.forEach((timeline) => timeline.kill());
   activeGlowTimelines.clear();

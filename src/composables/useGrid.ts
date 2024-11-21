@@ -49,7 +49,7 @@ export function useGrid() {
   }
 
   /**
-   * Updates the state of a cell and triggers necessary animations.
+   * Updates the state of a cell and triggers necessary animations or direct style updates.
    */
   function updateCellState(
     row: number,
@@ -64,25 +64,54 @@ export function useGrid() {
     nextTick(() => {
       const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
       if (cellElement) {
-        cellElement.style.backgroundColor = ''; // Reset any inline styles
+        // Reset any inline styles
+        cellElement.style.backgroundColor = ''; // Reset to CSS-defined colors
         cellElement.style.transform = '';
         cellElement.style.boxShadow = '';
 
-        // Trigger wall placement animation
+        // Handle 'path' state
+        if (state === 'path') {
+          if (animationsEnabled.value) {
+            animatePathCell(cellElement);
+          } else {
+            cellElement.style.backgroundColor = '#FBBF24'; // Path color
+          }
+        }
+
+        // Handle 'wall' placement/removal
         if (state === 'wall') {
-          animateWallPlacement(cellElement);
+          if (animationsEnabled.value) {
+            animateWallPlacement(cellElement);
+          } else {
+            cellElement.style.backgroundColor = '#1F2937'; // Wall color
+          }
         }
 
-        // Trigger wall removal animation
         if (previousState === 'wall' && state === 'empty') {
-          animateWallRemoval(cellElement);
+          if (animationsEnabled.value) {
+            animateWallRemoval(cellElement);
+          } else {
+            cellElement.style.backgroundColor = '#374151'; // Empty cell color
+          }
         }
 
-        // Existing animations
+        // Handle 'visited' state
         if (state === 'visited') {
-          animateVisitedCell(cellElement, algorithmType);
-        } else if (state === 'path') {
-          animatePathCell(cellElement);
+          if (animationsEnabled.value) {
+            animateVisitedCell(cellElement, algorithmType);
+          } else {
+            const targetColor = getVisitedCellColor(algorithmType);
+            cellElement.style.backgroundColor = targetColor;
+          }
+        }
+
+        // Handle 'path' state again for clarity
+        else if (state === 'path') {
+          if (animationsEnabled.value) {
+            animatePathCell(cellElement);
+          } else {
+            cellElement.style.backgroundColor = '#FBBF24'; // Path color
+          }
         }
       }
     });
@@ -170,7 +199,7 @@ export function useGrid() {
     endNode.row = -1;
     endNode.col = -1;
 
-    clearGlowEffects();
+    clearGlowEffects(); // Ensures glow animations are cleared
   }
 
   function resetGridState() {
@@ -187,7 +216,7 @@ export function useGrid() {
       });
     });
 
-    clearGlowEffects();
+    clearGlowEffects(); // Ensures glow animations are cleared
   }
 
   function clearCellInlineStyles(row: number, col: number) {

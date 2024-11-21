@@ -1,4 +1,3 @@
-
 import type { Cell, CellState } from '@/composables/useGrid';
 import type { Ref } from 'vue';
 import { startSequentialGlowLoop } from '@/composables/animations';

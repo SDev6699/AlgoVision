@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
+import { defineComponent, PropType, computed } from 'vue';
 import { useAlgorithms } from '@/composables/useAlgorithms';
 import { animationsEnabled } from '@/composables/useAnimations'; // Import animationsEnabled
 import type { CellState } from '@/composables/useGrid';
@@ -143,8 +143,12 @@ div {
   cursor: pointer;
 }
 
-/* Optional: Transition for smooth hover effect */
-.transition-colors {
-  transition-property: background-color;
+.toggle-checkbox:checked {
+  background-color: #3b82f6;
 }
+
+.toggle-checkbox::after {
+  transform: translateX(20px);
+}
+
 </style>
