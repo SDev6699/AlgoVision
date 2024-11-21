@@ -1,13 +1,18 @@
 import type { Cell, CellState } from '@/composables/useGrid';
 import { sleep } from '@/utils/sleep';
-import { startSequentialGlowLoop, clearSequentialGlowLoop } from '@/composables/animations';
-import { gsap } from 'gsap';
+import { startSequentialGlowLoop } from '@/composables/animations';
+import { currentPathCells, animationsEnabled } from '@/composables/useAnimations'; // Import animationsEnabled
 
 export async function aStarAlgorithm(
   grid: Cell[][],
   startNode: { row: number; col: number },
   endNode: { row: number; col: number },
-  updateCellState: (row: number, col: number, state: CellState) => void,
+  updateCellState: (
+    row: number,
+    col: number,
+    state: CellState,
+    algorithmType: string
+  ) => void,
   statusMessage: { value: string }
 ) {
   const openSet: Cell[] = [];
@@ -49,7 +54,7 @@ export async function aStarAlgorithm(
         if (!openSet.includes(neighbor)) {
           openSet.push(neighbor);
           if (neighbor.state !== 'end') {
-            updateCellState(neighbor.row, neighbor.col, 'visited');
+            updateCellState(neighbor.row, neighbor.col, 'visited', 'A*');
             await sleep(10);
           }
         }
@@ -89,7 +94,12 @@ function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
  */
 async function drawPath(
   endCell: Cell,
-  updateCellState: (row: number, col: number, state: CellState) => void
+  updateCellState: (
+    row: number,
+    col: number,
+    state: CellState,
+    algorithmType: string
+  ) => void
 ) {
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
@@ -110,22 +120,26 @@ async function drawPath(
 
   // Draw the path by updating cell states to 'path' with delays for animation
   for (const cell of pathCells) {
-    updateCellState(cell.row, cell.col, 'path');
+    updateCellState(cell.row, cell.col, 'path', 'A*');
     await sleep(30); // Delay for smoothness
   }
 
   // Reverse the path to start the glow from the start node
   const reversedPathCells = [...pathCells].reverse();
 
-  // Define animation parameters
-  const glowDuration = 300; // Duration of each glow in milliseconds
-  const pauseDuration = 2000; // Pause between glow loops in milliseconds
-
   // Retrieve HTML elements for the path cells
   const glowElements: HTMLElement[] = reversedPathCells
     .map((cell) => document.getElementById(`cell-${cell.row}-${cell.col}`))
     .filter((el): el is HTMLElement => el !== null);
 
-  // Initiate the glow animation
-  startSequentialGlowLoop(glowElements, glowDuration, pauseDuration);
+  // Store the glow elements in currentPathCells
+  currentPathCells.value = glowElements;
+
+  // Initiate the glow animation if animations are enabled
+  if (animationsEnabled.value) {
+    const glowDuration = 300; // Duration of each glow in milliseconds
+    const pauseDuration = 2000; // Pause between glow loops in milliseconds
+
+    startSequentialGlowLoop(glowElements, glowDuration, pauseDuration);
+  }
 }

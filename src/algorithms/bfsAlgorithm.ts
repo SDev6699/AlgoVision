@@ -2,20 +2,21 @@ import type { Cell, CellState } from '@/composables/useGrid';
 import type { Ref } from 'vue';
 import { startSequentialGlowLoop } from '@/composables/animations';
 import { sleep } from '@/utils/sleep';
+import { currentPathCells, animationsEnabled } from '@/composables/useAnimations'; // Import animationsEnabled
 
 /**
  * Implements the Breadth-First Search (BFS) pathfinding algorithm.
- * @param grid - The grid of cells.
- * @param startNode - The start node coordinates.
- * @param endNode - The end node coordinates.
- * @param updateCellState - Function to update the state of a cell.
- * @param statusMessage - Reference to the status message.
  */
 export async function bfsAlgorithm(
   grid: Cell[][],
   startNode: { row: number; col: number },
   endNode: { row: number; col: number },
-  updateCellState: (row: number, col: number, state: CellState) => void,
+  updateCellState: (
+    row: number,
+    col: number,
+    state: CellState,
+    algorithmType: string
+  ) => void,
   statusMessage: Ref<string>
 ) {
   const queue: Cell[] = [];
@@ -47,7 +48,7 @@ export async function bfsAlgorithm(
         queue.push(neighbor);
 
         if (neighbor.state !== 'end') {
-          updateCellState(neighbor.row, neighbor.col, 'visited');
+          updateCellState(neighbor.row, neighbor.col, 'visited', 'BFS');
           await sleep(10);
         }
       }
@@ -59,9 +60,6 @@ export async function bfsAlgorithm(
 
 /**
  * Retrieves all valid neighboring cells (up, down, left, right).
- * @param cell - The current cell.
- * @param grid - The grid of cells.
- * @returns An array of neighboring cells.
  */
 function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
   const neighbors: Cell[] = [];
@@ -75,12 +73,15 @@ function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
 
 /**
  * Draws the shortest path by updating cell states and applying glow effects.
- * @param endCell - The end cell of the path.
- * @param updateCellState - Function to update the state of a cell.
  */
 async function drawPath(
   endCell: Cell,
-  updateCellState: (row: number, col: number, state: CellState) => void
+  updateCellState: (
+    row: number,
+    col: number,
+    state: CellState,
+    algorithmType: string
+  ) => void
 ) {
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
@@ -101,22 +102,26 @@ async function drawPath(
 
   // Draw the path by updating cell states to 'path' with delays for animation
   for (const cell of pathCells) {
-    updateCellState(cell.row, cell.col, 'path');
+    updateCellState(cell.row, cell.col, 'path', 'BFS');
     await sleep(30); // Delay for smoothness
   }
 
   // Reverse the path to start the glow from the start node
   const reversedPathCells = [...pathCells].reverse();
 
-  // Define animation parameters
-  const glowDuration = 300; // Duration of each glow in milliseconds
-  const pauseDuration = 2000; // Pause between glow loops in milliseconds
-
   // Retrieve HTML elements for the path cells
   const glowElements: HTMLElement[] = reversedPathCells
     .map((cell) => document.getElementById(`cell-${cell.row}-${cell.col}`))
     .filter((el): el is HTMLElement => el !== null);
 
-  // Initiate the glow animation
-  startSequentialGlowLoop(glowElements, glowDuration, pauseDuration);
+  // Store the glow elements in currentPathCells
+  currentPathCells.value = glowElements;
+
+  // Initiate the glow animation if animations are enabled
+  if (animationsEnabled.value) {
+    const glowDuration = 300; // Duration of each glow in milliseconds
+    const pauseDuration = 2000; // Pause between glow loops in milliseconds
+
+    startSequentialGlowLoop(glowElements, glowDuration, pauseDuration);
+  }
 }

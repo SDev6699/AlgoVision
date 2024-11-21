@@ -1,16 +1,16 @@
-import { animationsEnabled } from './useAnimations';
+import { ref } from 'vue';
 import { gsap } from 'gsap';
 
-// Map to keep track of active glow timelines by unique identifiers
-const activeGlowTimelines: Map<string, gsap.core.Timeline> = new Map();
+export const animationsEnabled = ref(true);
+
+// Exported to store the current path cells involved in the glowing animation
+export const currentPathCells = ref<HTMLElement[]>([]);
+
+// Exported to store the current glow timeline
+export const currentGlowTimeline = ref<gsap.core.Timeline | null>(null);
 
 /**
  * Starts a sequential glow loop that flows from start to end.
- * Each glow starts after the previous one completes.
- * After completing the sequence, waits for a specified pause before repeating.
- * @param pathCells - Array of HTML elements representing the path cells.
- * @param glowDuration - Duration of each glow animation in milliseconds.
- * @param repeatDelay - Delay before the glow sequence repeats, in milliseconds.
  */
 export function startSequentialGlowLoop(
   pathCells: HTMLElement[],
@@ -19,14 +19,10 @@ export function startSequentialGlowLoop(
 ) {
   if (!animationsEnabled.value) return; // Prevent starting animations if disabled
 
-  // Unique identifier for the sequential glow timeline
-  const timelineId = 'sequentialGlow';
-
-  // If a sequential glow timeline already exists, kill it before creating a new one
-  if (activeGlowTimelines.has(timelineId)) {
-    const existingTimeline = activeGlowTimelines.get(timelineId);
-    existingTimeline?.kill();
-    activeGlowTimelines.delete(timelineId);
+  // If a glow timeline already exists, resume it
+  if (currentGlowTimeline.value) {
+    currentGlowTimeline.value.resume();
+    return;
   }
 
   // Create a new timeline for the sequential glow loop
@@ -54,31 +50,22 @@ export function startSequentialGlowLoop(
     );
   });
 
-  // Store the timeline with its unique identifier
-  activeGlowTimelines.set(timelineId, glowTimeline);
+  // Store the timeline
+  currentGlowTimeline.value = glowTimeline;
 }
 
 /**
- * Clears the sequential glow loop if it exists.
- */
-export function clearSequentialGlowLoop() {
-  const timelineId = 'sequentialGlow';
-  const timeline = activeGlowTimelines.get(timelineId);
-  if (timeline) {
-    timeline.kill();
-    activeGlowTimelines.delete(timelineId);
-  }
-}
-
-/**
- * Clears all active glow effects by killing their timelines and clearing pending timeouts.
- * This function now always clears glow effects, regardless of the animationsEnabled state.
+ * Clears the glow effect by pausing the timeline and resetting cell styles.
  */
 export function clearGlowEffects() {
-  // Removed the early return to ensure all glow animations are cleared
-  // regardless of the current animationsEnabled state.
+  if (currentGlowTimeline.value) {
+    currentGlowTimeline.value.pause();
 
-  // Kill all active timelines
-  activeGlowTimelines.forEach((timeline) => timeline.kill());
-  activeGlowTimelines.clear();
+    // Reset the boxShadow styles of the cells
+    if (currentPathCells.value.length > 0) {
+      currentPathCells.value.forEach((cell) => {
+        cell.style.boxShadow = 'none';
+      });
+    }
+  }
 }

@@ -1,7 +1,7 @@
 import { reactive, computed, nextTick } from 'vue';
 import type { AlgorithmType } from '@/types/AlgorithmType';
 import { animationsEnabled } from './useAnimations';
-import { startSequentialGlowLoop, clearSequentialGlowLoop, clearGlowEffects } from './animations';
+import { startSequentialGlowLoop, clearGlowEffects, currentGlowTimeline, currentPathCells } from './animations';
 import { gsap } from 'gsap';
 
 export type CellState = 'empty' | 'start' | 'end' | 'wall' | 'visited' | 'path';
@@ -200,6 +200,8 @@ export function useGrid() {
     endNode.col = -1;
 
     clearGlowEffects(); // Ensures glow animations are cleared
+    currentPathCells.value = []; // Clear stored path cells
+    currentGlowTimeline.value = null; // Clear the glow timeline
   }
 
   function resetGridState() {
@@ -217,6 +219,8 @@ export function useGrid() {
     });
 
     clearGlowEffects(); // Ensures glow animations are cleared
+    currentPathCells.value = []; // Clear stored path cells
+    currentGlowTimeline.value = null; // Clear the glow timeline
   }
 
   function clearCellInlineStyles(row: number, col: number) {
