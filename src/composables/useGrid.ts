@@ -3,6 +3,7 @@ import type { AlgorithmType } from '@/types/AlgorithmType';
 import { animationsEnabled, currentGlowTimeline, currentPathCells, glowSpeedMultiplier } from './useAnimations';
 import { startSequentialGlowLoop, clearGlowEffects } from './animations';
 import { gsap } from 'gsap';
+import { sleep } from '@/utils/sleep'; // Import sleep function
 
 export type CellState = 'empty' | 'start' | 'end' | 'wall' | 'visited' | 'path';
 
@@ -51,115 +52,140 @@ export function useGrid() {
   /**
    * Updates the state of a cell and triggers necessary animations or direct style updates.
    */
-  function updateCellState(
+  async function updateCellState(
     row: number,
     col: number,
     state: CellState,
     algorithmType: AlgorithmType
-  ) {
+  ): Promise<void> {
     const cell = grid[row][col];
     const previousState = cell.state;
     cell.state = state;
 
-    nextTick(() => {
-      const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
-      if (cellElement) {
-        // Reset any inline styles
-        cellElement.style.backgroundColor = ''; // Reset to CSS-defined colors
-        cellElement.style.transform = '';
-        cellElement.style.boxShadow = '';
+    await nextTick();
 
-        // Handle 'path' state
-        if (state === 'path') {
-          if (animationsEnabled.value) {
-            animatePathCell(cellElement);
-          } else {
-            cellElement.style.backgroundColor = '#FBBF24'; // Path color
-          }
-        }
+    const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
+    if (cellElement) {
+      // Reset any inline styles
+      cellElement.style.backgroundColor = ''; // Reset to CSS-defined colors
+      cellElement.style.transform = '';
+      cellElement.style.boxShadow = '';
 
-        // Handle 'wall' placement/removal
-        if (state === 'wall') {
-          if (animationsEnabled.value) {
-            animateWallPlacement(cellElement);
-          } else {
-            cellElement.style.backgroundColor = '#1F2937'; // Wall color
-          }
-        }
+      let animationPromise: Promise<void> | null = null;
 
-        if (previousState === 'wall' && state === 'empty') {
-          if (animationsEnabled.value) {
-            animateWallRemoval(cellElement);
-          } else {
-            cellElement.style.backgroundColor = '#374151'; // Empty cell color
-          }
-        }
-
-        // Handle 'visited' state
-        if (state === 'visited') {
-          if (animationsEnabled.value) {
-            animateVisitedCell(cellElement, algorithmType);
-          } else {
-            const targetColor = getVisitedCellColor(algorithmType);
-            cellElement.style.backgroundColor = targetColor;
-          }
+      // Handle 'path' state
+      if (state === 'path') {
+        if (animationsEnabled.value) {
+          animationPromise = animatePathCell(cellElement);
+        } else {
+          cellElement.style.backgroundColor = '#FBBF24'; // Path color
+          // Introduce a delay equivalent to the animation duration
+          animationPromise = sleep(200); // 200 ms delay
         }
       }
-    });
+
+      // Handle 'wall' placement/removal
+      if (state === 'wall') {
+        if (animationsEnabled.value) {
+          animationPromise = animateWallPlacement(cellElement);
+        } else {
+          cellElement.style.backgroundColor = '#1F2937'; // Wall color
+          animationPromise = sleep(300); // 300 ms delay to match animation duration
+        }
+      }
+
+      if (previousState === 'wall' && state === 'empty') {
+        if (animationsEnabled.value) {
+          animationPromise = animateWallRemoval(cellElement);
+        } else {
+          cellElement.style.backgroundColor = '#374151'; // Empty cell color
+          animationPromise = sleep(300); // 300 ms delay
+        }
+      }
+
+      // Handle 'visited' state
+      if (state === 'visited') {
+        if (animationsEnabled.value) {
+          animationPromise = animateVisitedCell(cellElement, algorithmType);
+        } else {
+          const targetColor = getVisitedCellColor(algorithmType);
+          cellElement.style.backgroundColor = targetColor;
+          animationPromise = sleep(200); // 200 ms delay
+        }
+      }
+
+      // Await the animation or delay if there is one
+      if (animationPromise) {
+        await animationPromise;
+      }
+    }
   }
 
   /**
    * Animates the placement of a wall.
    */
-  function animateWallPlacement(cellElement: HTMLElement) {
-    if (!animationsEnabled.value) return;
+  function animateWallPlacement(cellElement: HTMLElement): Promise<void> {
+    if (!animationsEnabled.value) return Promise.resolve();
 
-    gsap.fromTo(
-      cellElement,
-      { backgroundColor: '#374151' }, // Current 'empty' state color
-      {
-        backgroundColor: '#1F2937', // Wall color (darker gray)
-        duration: 0.3,
-        ease: 'power1.inOut',
-      }
-    );
+    return new Promise((resolve) => {
+      gsap.fromTo(
+        cellElement,
+        { backgroundColor: '#374151' }, // Current 'empty' state color
+        {
+          backgroundColor: '#1F2937', // Wall color (darker gray)
+          duration: 0.3,
+          ease: 'power1.inOut',
+          onComplete: resolve,
+        }
+      );
+    });
   }
 
   /**
    * Animates the removal of a wall.
    */
-  function animateWallRemoval(cellElement: HTMLElement) {
-    if (!animationsEnabled.value) return;
+  function animateWallRemoval(cellElement: HTMLElement): Promise<void> {
+    if (!animationsEnabled.value) return Promise.resolve();
 
-    gsap.fromTo(
-      cellElement,
-      { backgroundColor: '#1F2937' }, // Current 'wall' color
-      {
-        backgroundColor: '#374151', // 'Empty' state color
-        duration: 0.3,
-        ease: 'power1.inOut',
-      }
-    );
-  }
-
-  function animateVisitedCell(cellElement: HTMLElement, algorithmType: AlgorithmType) {
-    if (!animationsEnabled.value) return;
-
-    const targetColor = getVisitedCellColor(algorithmType);
-    gsap.to(cellElement, {
-      backgroundColor: targetColor,
-      duration: 0.3,
-      ease: 'power1.inOut',
+    return new Promise((resolve) => {
+      gsap.fromTo(
+        cellElement,
+        { backgroundColor: '#1F2937' }, // Current 'wall' color
+        {
+          backgroundColor: '#374151', // 'Empty' state color
+          duration: 0.3,
+          ease: 'power1.inOut',
+          onComplete: resolve,
+        }
+      );
     });
   }
 
-  function animatePathCell(cellElement: HTMLElement) {
-    if (!animationsEnabled.value) return;
+  function animateVisitedCell(cellElement: HTMLElement, algorithmType: AlgorithmType): Promise<void> {
+    if (!animationsEnabled.value) return Promise.resolve();
 
-    gsap.to(cellElement, {
-      backgroundColor: '#FBBF24',
-      duration: 0.3,
-      ease: 'power1.inOut',
+    const targetColor = getVisitedCellColor(algorithmType);
+
+    return new Promise((resolve) => {
+      gsap.to(cellElement, {
+        backgroundColor: targetColor,
+        duration: 0.2,
+        ease: 'power1.inOut',
+        onComplete: resolve,
+      });
+    });
+  }
+
+  function animatePathCell(cellElement: HTMLElement): Promise<void> {
+    if (!animationsEnabled.value) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      gsap.to(cellElement, {
+        backgroundColor: '#FBBF24',
+        duration: 0.2,
+        ease: 'power1.inOut',
+        onComplete: resolve,
+      });
     });
   }
 

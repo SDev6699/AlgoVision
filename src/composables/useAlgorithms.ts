@@ -29,14 +29,14 @@ export function useAlgorithms() {
       col: number,
       state: CellState,
       algorithmType: AlgorithmType
-    ) => void
+    ) => Promise<void>
   ) {
     const algorithmType = selectedAlgorithm.value;
     statusMessage.value = `Running ${algorithmType}...`;
 
     // Create a wrapper function that includes algorithmType
     const updateCellState = (row: number, col: number, state: CellState) => {
-      updateCellStateBase(row, col, state, algorithmType);
+      return updateCellStateBase(row, col, state, algorithmType);
     };
 
     switch (algorithmType) {

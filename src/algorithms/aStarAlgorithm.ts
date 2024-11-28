@@ -1,5 +1,4 @@
 import type { Cell, CellState } from '@/composables/useGrid';
-import { sleep } from '@/utils/sleep';
 import { startSequentialGlowLoop } from '@/composables/animations';
 import { currentPathCells, animationsEnabled } from '@/composables/useAnimations';
 
@@ -15,7 +14,7 @@ export async function aStarAlgorithm(
     col: number,
     state: CellState,
     algorithmType: string
-  ) => void,
+  ) => Promise<void>,
   statusMessage: { value: string }
 ) {
   const openSet: Cell[] = [];
@@ -57,8 +56,7 @@ export async function aStarAlgorithm(
         if (!openSet.includes(neighbor)) {
           openSet.push(neighbor);
           if (neighbor.state !== 'end') {
-            updateCellState(neighbor.row, neighbor.col, 'visited', 'A*');
-            await sleep(10);
+            await updateCellState(neighbor.row, neighbor.col, 'visited', 'A*');
           }
         }
       }
@@ -102,7 +100,7 @@ async function drawPath(
     col: number,
     state: CellState,
     algorithmType: string
-  ) => void
+  ) => Promise<void>
 ) {
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
@@ -123,8 +121,7 @@ async function drawPath(
 
   // Draw the path by updating cell states to 'path' with delays for animation
   for (const cell of pathCells) {
-    updateCellState(cell.row, cell.col, 'path', 'A*');
-    await sleep(30); // Delay for smoothness
+    await updateCellState(cell.row, cell.col, 'path', 'A*');
   }
 
   // Reverse the path to start the glow from the start node

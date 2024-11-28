@@ -1,7 +1,7 @@
+
 import type { Cell, CellState } from '@/composables/useGrid';
 import type { Ref } from 'vue';
 import { startSequentialGlowLoop } from '@/composables/animations';
-import { sleep } from '@/utils/sleep';
 import { currentPathCells, animationsEnabled } from '@/composables/useAnimations';
 
 /**
@@ -16,7 +16,7 @@ export async function dfsAlgorithm(
     col: number,
     state: CellState,
     algorithmType: string
-  ) => void,
+  ) => Promise<void>,
   statusMessage: Ref<string>
 ) {
   const stack: Cell[] = [];
@@ -41,8 +41,7 @@ export async function dfsAlgorithm(
     }
 
     if (currentCell.state !== 'start' && currentCell.state !== 'end') {
-      updateCellState(currentCell.row, currentCell.col, 'visited', 'DFS');
-      await sleep(10);
+      await updateCellState(currentCell.row, currentCell.col, 'visited', 'DFS');
     }
 
     const neighbors = getNeighbors(currentCell, grid);
@@ -81,7 +80,7 @@ async function drawPath(
     col: number,
     state: CellState,
     algorithmType: string
-  ) => void
+  ) => Promise<void>
 ) {
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
@@ -102,8 +101,7 @@ async function drawPath(
 
   // Draw the path by updating cell states to 'path' with delays for animation
   for (const cell of pathCells) {
-    updateCellState(cell.row, cell.col, 'path', 'DFS');
-    await sleep(30); // Delay for smoothness
+    await updateCellState(cell.row, cell.col, 'path', 'DFS');
   }
 
   // Reverse the path to start the glow from the start node

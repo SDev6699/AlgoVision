@@ -1,3 +1,4 @@
+
 <template>
   <div
     ref="controlPanel"
@@ -32,7 +33,7 @@
 <script lang="ts">
 import { defineComponent, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { gsap } from 'gsap';
-import { animationsEnabled, currentPathCells, currentGlowTimeline, glowSpeedMultiplier } from '@/composables/useAnimations';
+import { animationsEnabled, currentGlowTimeline, currentPathCells, glowSpeedMultiplier } from '@/composables/useAnimations';
 import { clearGlowEffects, startSequentialGlowLoop } from '@/composables/animations';
 
 export default defineComponent({
