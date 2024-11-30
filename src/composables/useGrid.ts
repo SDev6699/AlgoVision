@@ -1,3 +1,4 @@
+
 import { reactive, computed, nextTick } from 'vue';
 import type { AlgorithmType } from '@/types/AlgorithmType';
 import { animationsEnabled, currentGlowTimeline, currentPathCells, glowSpeedMultiplier } from './useAnimations';
@@ -113,6 +114,7 @@ export function useGrid() {
         if (animationsEnabled.value) {
           animateWallRemoval(cellElement);
         } else {
+          // Ensure the cell is properly scaled and styled
           cellElement.style.transform = 'scale(1)';
         }
       }
@@ -139,30 +141,31 @@ export function useGrid() {
   function animateWallPlacement(cellElement: HTMLElement): void {
     gsap.fromTo(
       cellElement,
-      { scale: 0 },
+      { scale: 1 }, // Start from original scale
       {
-        scale: 1,
+        scale: 1.1, // Slightly enlarge to indicate wall placement
         duration: 0.3,
         ease: 'power1.inOut',
+        yoyo: true,
+        repeat: 1, // Pulsate effect
       }
     );
   }
 
   /**
-   * Animates the removal of a wall using scale transform.
+   * Animates the removal of a wall by resetting transformations.
    */
   function animateWallRemoval(cellElement: HTMLElement): void {
-    gsap.fromTo(
-      cellElement,
-      { scale: 1 },
-      {
-        scale: 0,
-        duration: 0.3,
-        ease: 'power1.inOut',
-      }
-    );
+    gsap.to(cellElement, {
+      scale: 1, // Ensure the cell is scaled back to its original size
+      duration: 0.3,
+      ease: 'power1.inOut',
+    });
   }
 
+  /**
+   * Animates the visited cell.
+   */
   function animateVisitedCell(overlayElement: HTMLElement): void {
     gsap.to(overlayElement, {
       opacity: 1,
@@ -230,13 +233,13 @@ export function useGrid() {
     nextTick(() => {
       const cellElement = document.getElementById(`cell-${row}-${col}`);
       if (cellElement) {
-        cellElement.style.transform = '';
+        cellElement.style.transform = 'scale(1)'; // Ensure scale is reset
       }
       const overlayElement = cellElement?.querySelector('.cell-overlay') as HTMLElement | null;
       if (overlayElement) {
         overlayElement.style.opacity = '0';
-        overlayElement.style.transform = '';
-        overlayElement.style.backgroundColor = '';
+        overlayElement.style.transform = 'scale(1)';
+        overlayElement.style.backgroundColor = 'transparent';
         overlayElement.style.transition = '';
         overlayElement.classList.remove('path-pulsate');
       }
