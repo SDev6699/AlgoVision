@@ -83,9 +83,6 @@ export default defineComponent({
     const isVisualizing = ref(false);
     const placing = ref<'wall' | null>(null); // Currently, only 'wall' placement is handled
 
-    // Set to track walls added during the current drag
-    const newWalls = ref<Set<string>>(new Set());
-
     // Reactive variable to track the current placing mode: 'add' or 'remove'
     const placingMode = ref<'add' | 'remove' | null>(null);
 
@@ -128,19 +125,16 @@ export default defineComponent({
       isMouseDown.value = false;
       placing.value = null;
       placingMode.value = null;
-      newWalls.value.clear(); // Clear the set after drag is complete
     }
 
     function handleMouseLeave() {
       isMouseDown.value = false;
       placing.value = null;
       placingMode.value = null;
-      newWalls.value.clear(); // Clear the set if mouse leaves the grid during drag
     }
 
     function onCellMouseDown(row: number, col: number) {
       const cell = grid[row][col];
-      const cellKey = `${row}-${col}`; // Unique identifier for the cell
 
       if (!isStartNodePlaced.value) {
         // Place start node
@@ -168,17 +162,12 @@ export default defineComponent({
 
         if (cell.state === 'wall') {
           // Initiate wall removal mode
-          if (!newWalls.value.has(cellKey)) {
-            // Only allow removal if the wall was not added during this drag
-            updateCellState(row, col, 'empty', selectedAlgorithm.value);
-            placingMode.value = 'remove';
-          }
-          // If the wall was added during this drag, do not allow removal
+          placingMode.value = 'remove';
+          updateCellState(row, col, 'empty', selectedAlgorithm.value);
         } else {
           // Initiate wall addition mode
-          updateCellState(row, col, 'wall', selectedAlgorithm.value);
-          newWalls.value.add(cellKey); // Track the new wall
           placingMode.value = 'add';
+          updateCellState(row, col, 'wall', selectedAlgorithm.value);
         }
       }
     }
@@ -186,24 +175,18 @@ export default defineComponent({
     function onCellMouseEnter(row: number, col: number) {
       if (isMouseDown.value && placing.value === 'wall') {
         const cell = grid[row][col];
-        const cellKey = `${row}-${col}`; // Unique identifier for the cell
 
         // Ensure we don't modify start or end nodes
         if (cell.state === 'start' || cell.state === 'end') {
           return;
         }
 
-        if (cell.state === 'wall') {
-          // Attempt to remove wall
-          if (!newWalls.value.has(cellKey)) {
-            // Only allow removal if the wall was not added during this drag
-            updateCellState(row, col, 'empty', selectedAlgorithm.value);
-          }
-          // If the wall was added during this drag, do not allow removal
-        } else {
-          // Attempt to add wall
+        if (placingMode.value === 'add' && cell.state !== 'wall') {
+          // Add wall
           updateCellState(row, col, 'wall', selectedAlgorithm.value);
-          newWalls.value.add(cellKey); // Track the new wall
+        } else if (placingMode.value === 'remove' && cell.state === 'wall') {
+          // Remove wall
+          updateCellState(row, col, 'empty', selectedAlgorithm.value);
         }
       }
     }
@@ -212,7 +195,6 @@ export default defineComponent({
       isMouseDown.value = false;
       placing.value = null;
       placingMode.value = null;
-      newWalls.value.clear(); // Clear the set after drag is complete
     }
 
     function clearGrid() {
@@ -244,7 +226,6 @@ export default defineComponent({
     }
 
     onUnmounted(() => {
-      newWalls.value.clear();
       placingMode.value = null;
     });
 

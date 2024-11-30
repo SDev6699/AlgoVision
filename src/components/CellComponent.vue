@@ -9,6 +9,11 @@
     role="button"
     tabindex="0"
   >
+    <!-- Overlay for animating opacity and transform -->
+    <div
+      class="cell-overlay"
+      :style="overlayStyle"
+    ></div>
     <span v-if="cell.state === 'start'" class="text-white">S</span>
     <span v-else-if="cell.state === 'end'" class="text-white">E</span>
   </div>
@@ -17,7 +22,7 @@
 <script lang="ts">
 import { defineComponent, PropType, computed } from 'vue';
 import { useAlgorithms } from '@/composables/useAlgorithms';
-import { animationsEnabled } from '@/composables/useAnimations'; // Import animationsEnabled
+import { animationsEnabled } from '@/composables/useAnimations';
 import type { CellState } from '@/composables/useGrid';
 
 export default defineComponent({
@@ -40,7 +45,7 @@ export default defineComponent({
     const { selectedAlgorithm } = useAlgorithms();
     return {
       selectedAlgorithm,
-      animationsEnabled, // Make animationsEnabled available in the template
+      animationsEnabled,
     };
   },
   computed: {
@@ -48,26 +53,26 @@ export default defineComponent({
       let classes = '';
       switch (this.cell.state) {
         case 'start':
-          classes = 'bg-green-500 flex items-center justify-center';
+          classes = 'start-cell flex items-center justify-center';
           break;
         case 'end':
-          classes = 'bg-red-500 flex items-center justify-center';
+          classes = 'end-cell flex items-center justify-center';
           break;
         case 'wall':
-          classes = 'bg-gray-800';
+          classes = 'wall-cell';
           break;
         case 'visited':
-          classes = ''; // GSAP handles visited cell colors
+          classes = 'visited-cell';
           break;
         case 'path':
-          classes = ''; // GSAP handles path cell colors
+          classes = 'path-cell';
           break;
         default:
-          classes = 'bg-gray-700 hover:bg-gray-600 transition-colors duration-200';
+          classes = 'empty-cell hover:bg-gray-600 transition-colors duration-200';
       }
       // Append common classes for scaling on hover
       classes += ' transform transition-transform duration-200 hover:scale-105';
-      
+
       // Conditionally add the 'pulse' class for start and end nodes if animations are enabled
       if (
         (this.cell.state === 'start' || this.cell.state === 'end') &&
@@ -76,6 +81,11 @@ export default defineComponent({
         classes += ' pulse';
       }
       return classes;
+    },
+    overlayStyle() {
+      return {
+        transition: this.animationsEnabled ? 'opacity 0.2s ease, transform 0.2s ease' : 'none',
+      };
     },
   },
   methods: {
@@ -111,7 +121,7 @@ export default defineComponent({
 </script>
 
 <style scoped>
-/* Define keyframes for pulsing effect without glow */
+/* Define keyframes for pulsing effect */
 @keyframes pulse {
   0% {
     transform: scale(1);
@@ -129,7 +139,6 @@ export default defineComponent({
   animation: pulse 2s infinite;
 }
 
-/* Existing cell styles */
 div {
   width: 20px;
   height: 20px;
@@ -139,16 +148,53 @@ div {
   justify-content: center;
   user-select: none;
   position: relative;
-  overflow: visible;
+  overflow: hidden; /* Changed to hidden to clip overlay */
   cursor: pointer;
 }
 
-.toggle-checkbox:checked {
-  background-color: #3b82f6;
+.empty-cell {
+  background-color: #374151;
 }
 
-.toggle-checkbox::after {
-  transform: translateX(20px);
+.wall-cell {
+  background-color: #1F2937;
 }
 
+.start-cell {
+  background-color: #10B981;
+}
+
+.end-cell {
+  background-color: #EF4444;
+}
+
+/* Overlay styles */
+.cell-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transform: scale(1);
+  pointer-events: none;
+  background-color: transparent;
+}
+
+/* Updated keyframes for path pulsating effect */
+@keyframes pathPulse {
+  0% {
+    background-color: #FBBF24; /* Base yellow */
+  }
+  50% {
+    background-color: #FDE68A; /* Lighter yellow */
+  }
+  100% {
+    background-color: #FBBF24; /* Base yellow */
+  }
+}
+
+.path-pulsate {
+  animation: pathPulse 2s infinite;
+}
 </style>

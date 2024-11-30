@@ -3,7 +3,7 @@ import type { AlgorithmType } from '@/types/AlgorithmType';
 import { animationsEnabled, currentGlowTimeline, currentPathCells, glowSpeedMultiplier } from './useAnimations';
 import { startSequentialGlowLoop, clearGlowEffects } from './animations';
 import { gsap } from 'gsap';
-import { sleep } from '@/utils/sleep'; // Import sleep function
+import { sleep } from '@/utils/sleep';
 
 export type CellState = 'empty' | 'start' | 'end' | 'wall' | 'visited' | 'path';
 
@@ -25,6 +25,9 @@ export function useGrid() {
 
   const startNode = reactive({ row: -1, col: -1 });
   const endNode = reactive({ row: -1, col: -1 });
+
+  // Define a fixed delay for pacing
+  const cellUpdateDelay = 50; // milliseconds
 
   function initializeGrid() {
     grid.length = 0;
@@ -65,127 +68,106 @@ export function useGrid() {
     await nextTick();
 
     const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
-    if (cellElement) {
-      // Reset any inline styles
-      cellElement.style.backgroundColor = ''; // Reset to CSS-defined colors
-      cellElement.style.transform = '';
-      cellElement.style.boxShadow = '';
+    const overlayElement = cellElement?.querySelector('.cell-overlay') as HTMLElement | null;
 
-      let animationPromise: Promise<void> | null = null;
+    if (cellElement && overlayElement) {
+      // Reset overlay styles when state changes
+      overlayElement.style.opacity = '0';
+      overlayElement.style.backgroundColor = 'transparent';
+      overlayElement.style.transform = 'scale(1)';
+      overlayElement.style.transition = animationsEnabled.value ? 'opacity 0.2s ease, transform 0.2s ease' : 'none';
 
       // Handle 'path' state
       if (state === 'path') {
+        overlayElement.style.backgroundColor = '#FBBF24'; // Path color (yellow)
+        overlayElement.style.opacity = '1';
+
         if (animationsEnabled.value) {
-          animationPromise = animatePathCell(cellElement);
+          // Start pulsating effect
+          overlayElement.classList.add('path-pulsate');
         } else {
-          cellElement.style.backgroundColor = '#FBBF24'; // Path color
-          // Introduce a delay equivalent to the animation duration
-          animationPromise = sleep(200); // 200 ms delay
+          // Ensure pulsating class is removed when animations are off
+          overlayElement.classList.remove('path-pulsate');
         }
       }
 
       // Handle 'wall' placement/removal
       if (state === 'wall') {
+        // Clear overlay styles to ensure wall is visible
+        overlayElement.style.opacity = '0';
+        overlayElement.style.backgroundColor = 'transparent';
+
         if (animationsEnabled.value) {
-          animationPromise = animateWallPlacement(cellElement);
+          animateWallPlacement(cellElement);
         } else {
-          cellElement.style.backgroundColor = '#1F2937'; // Wall color
-          animationPromise = sleep(300); // 300 ms delay to match animation duration
+          cellElement.style.transform = 'scale(1)';
         }
       }
 
-      if (previousState === 'wall' && state === 'empty') {
+      if ((previousState === 'wall' || previousState === 'visited' || previousState === 'path') && state === 'empty') {
+        // Clear overlay styles to ensure cell returns to default appearance
+        overlayElement.style.opacity = '0';
+        overlayElement.style.backgroundColor = 'transparent';
+        overlayElement.classList.remove('path-pulsate');
+
         if (animationsEnabled.value) {
-          animationPromise = animateWallRemoval(cellElement);
+          animateWallRemoval(cellElement);
         } else {
-          cellElement.style.backgroundColor = '#374151'; // Empty cell color
-          animationPromise = sleep(300); // 300 ms delay
+          cellElement.style.transform = 'scale(1)';
         }
       }
 
       // Handle 'visited' state
       if (state === 'visited') {
+        const targetColor = getVisitedCellColor(algorithmType);
+        overlayElement.style.backgroundColor = targetColor;
         if (animationsEnabled.value) {
-          animationPromise = animateVisitedCell(cellElement, algorithmType);
+          animateVisitedCell(overlayElement);
         } else {
-          const targetColor = getVisitedCellColor(algorithmType);
-          cellElement.style.backgroundColor = targetColor;
-          animationPromise = sleep(200); // 200 ms delay
+          overlayElement.style.opacity = '1';
         }
-      }
-
-      // Await the animation or delay if there is one
-      if (animationPromise) {
-        await animationPromise;
       }
     }
+
+    // Always wait for the fixed delay to control pacing
+    await sleep(cellUpdateDelay);
   }
 
   /**
-   * Animates the placement of a wall.
+   * Animates the placement of a wall using scale transform.
    */
-  function animateWallPlacement(cellElement: HTMLElement): Promise<void> {
-    if (!animationsEnabled.value) return Promise.resolve();
-
-    return new Promise((resolve) => {
-      gsap.fromTo(
-        cellElement,
-        { backgroundColor: '#374151' }, // Current 'empty' state color
-        {
-          backgroundColor: '#1F2937', // Wall color (darker gray)
-          duration: 0.3,
-          ease: 'power1.inOut',
-          onComplete: resolve,
-        }
-      );
-    });
+  function animateWallPlacement(cellElement: HTMLElement): void {
+    gsap.fromTo(
+      cellElement,
+      { scale: 0 },
+      {
+        scale: 1,
+        duration: 0.3,
+        ease: 'power1.inOut',
+      }
+    );
   }
 
   /**
-   * Animates the removal of a wall.
+   * Animates the removal of a wall using scale transform.
    */
-  function animateWallRemoval(cellElement: HTMLElement): Promise<void> {
-    if (!animationsEnabled.value) return Promise.resolve();
-
-    return new Promise((resolve) => {
-      gsap.fromTo(
-        cellElement,
-        { backgroundColor: '#1F2937' }, // Current 'wall' color
-        {
-          backgroundColor: '#374151', // 'Empty' state color
-          duration: 0.3,
-          ease: 'power1.inOut',
-          onComplete: resolve,
-        }
-      );
-    });
+  function animateWallRemoval(cellElement: HTMLElement): void {
+    gsap.fromTo(
+      cellElement,
+      { scale: 1 },
+      {
+        scale: 0,
+        duration: 0.3,
+        ease: 'power1.inOut',
+      }
+    );
   }
 
-  function animateVisitedCell(cellElement: HTMLElement, algorithmType: AlgorithmType): Promise<void> {
-    if (!animationsEnabled.value) return Promise.resolve();
-
-    const targetColor = getVisitedCellColor(algorithmType);
-
-    return new Promise((resolve) => {
-      gsap.to(cellElement, {
-        backgroundColor: targetColor,
-        duration: 0.2,
-        ease: 'power1.inOut',
-        onComplete: resolve,
-      });
-    });
-  }
-
-  function animatePathCell(cellElement: HTMLElement): Promise<void> {
-    if (!animationsEnabled.value) return Promise.resolve();
-
-    return new Promise((resolve) => {
-      gsap.to(cellElement, {
-        backgroundColor: '#FBBF24',
-        duration: 0.2,
-        ease: 'power1.inOut',
-        onComplete: resolve,
-      });
+  function animateVisitedCell(overlayElement: HTMLElement): void {
+    gsap.to(overlayElement, {
+      opacity: 1,
+      duration: 0.2,
+      ease: 'power1.inOut',
     });
   }
 
@@ -248,9 +230,15 @@ export function useGrid() {
     nextTick(() => {
       const cellElement = document.getElementById(`cell-${row}-${col}`);
       if (cellElement) {
-        cellElement.style.backgroundColor = '';
         cellElement.style.transform = '';
-        cellElement.style.boxShadow = '';
+      }
+      const overlayElement = cellElement?.querySelector('.cell-overlay') as HTMLElement | null;
+      if (overlayElement) {
+        overlayElement.style.opacity = '0';
+        overlayElement.style.transform = '';
+        overlayElement.style.backgroundColor = '';
+        overlayElement.style.transition = '';
+        overlayElement.classList.remove('path-pulsate');
       }
     });
   }

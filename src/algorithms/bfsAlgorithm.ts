@@ -84,31 +84,28 @@ async function drawPath(
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
 
-  // Trace back from end to start to collect path cells
-  while (currentCell?.previousNode) {
-    if (currentCell.state !== 'start' && currentCell.state !== 'end') {
-      pathCells.push(currentCell);
-    }
+  // Collect path cells including the start node
+  while (currentCell) {
+    pathCells.push(currentCell);
     currentCell = currentCell.previousNode;
   }
 
-  // Ensure there's a valid path to draw
-  if (pathCells.length === 0) {
-    console.warn('No path cells found to draw.');
-    return;
+  // Reverse the path cells to have them in order from start to end
+  const reversedPathCells = pathCells.reverse();
+
+  // Update cell states to 'path' (excluding start and end nodes)
+  for (const cell of reversedPathCells) {
+    if (cell.state !== 'start' && cell.state !== 'end') {
+      await updateCellState(cell.row, cell.col, 'path', 'BFS');
+    }
   }
 
-  // Draw the path by updating cell states to 'path' with delays for animation
-  for (const cell of pathCells) {
-    await updateCellState(cell.row, cell.col, 'path', 'BFS');
-  }
-
-  // Reverse the path to start the glow from the start node
-  const reversedPathCells = [...pathCells].reverse();
-
-  // Retrieve HTML elements for the path cells
+  // Retrieve overlay elements for the path cells
   const glowElements: HTMLElement[] = reversedPathCells
-    .map((cell) => document.getElementById(`cell-${cell.row}-${cell.col}`))
+    .map((cell) => {
+      const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
+      return cellElement?.querySelector('.cell-overlay') as HTMLElement;
+    })
     .filter((el): el is HTMLElement => el !== null);
 
   // Store the glow elements in currentPathCells
@@ -118,8 +115,7 @@ async function drawPath(
   if (animationsEnabled.value) {
     const glowDuration = 2000; // Total duration of the glow animation
     const repeatDelay = 1000; // Delay between glow loops
-    const glowLength = 5; // Number of cells glowing at once
 
-    startSequentialGlowLoop(glowElements, glowDuration, repeatDelay, glowLength);
+    startSequentialGlowLoop(glowElements, glowDuration, repeatDelay);
   }
 }
