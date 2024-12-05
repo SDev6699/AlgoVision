@@ -1,3 +1,4 @@
+
 import type { Cell, CellState } from '@/composables/useGrid';
 import type { Ref } from 'vue';
 import { startSequentialGlowLoop } from '@/composables/animations';
@@ -103,15 +104,18 @@ async function drawPath(
     currentCell = currentCell.previousNode;
   }
 
-  // Animate from end to start without reversing the path
+  // Animate from end to start (tracing the path)
   for (const cell of pathCells) {
     if (cell.state !== 'start' && cell.state !== 'end') {
       await updateCellState(cell.row, cell.col, 'path', 'Dijkstra');
     }
   }
 
-  // Retrieve overlay elements for the path cells
-  const glowElements: HTMLElement[] = pathCells
+  // Reverse pathCells for glowing animation to proceed from start to end
+  const reversedPathCells = pathCells.slice().reverse();
+
+  // Retrieve overlay elements for the reversed path cells
+  const glowElements: HTMLElement[] = reversedPathCells
     .map((cell) => {
       const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
       return cellElement?.querySelector('.cell-overlay') as HTMLElement;
