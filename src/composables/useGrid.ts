@@ -1,7 +1,11 @@
-
 import { reactive, computed, nextTick } from 'vue';
 import type { AlgorithmType } from '@/types/AlgorithmType';
-import { animationsEnabled, currentGlowTimeline, currentPathCells, glowSpeedMultiplier } from './useAnimations';
+import {
+  animationsEnabled,
+  currentGlowTimeline,
+  currentPathCells,
+  glowSpeedMultiplier,
+} from './useAnimations';
 import { startSequentialGlowLoop, clearGlowEffects } from './animations';
 import { gsap } from 'gsap';
 import { sleep } from '@/utils/sleep';
@@ -76,19 +80,18 @@ export function useGrid() {
       overlayElement.style.opacity = '0';
       overlayElement.style.backgroundColor = 'transparent';
       overlayElement.style.transform = 'scale(1)';
-      overlayElement.style.transition = animationsEnabled.value ? 'opacity 0.2s ease, transform 0.2s ease' : 'none';
+      overlayElement.style.transition = animationsEnabled.value
+        ? 'opacity 0.2s ease, transform 0.2s ease'
+        : 'none';
 
       // Handle 'path' state
       if (state === 'path') {
-        overlayElement.style.backgroundColor = '#FBBF24'; // Path color (yellow)
-        overlayElement.style.opacity = '1';
-
+        const targetColor = '#FBBF24'; // Path color (yellow)
         if (animationsEnabled.value) {
-          // Start pulsating effect
-          overlayElement.classList.add('path-pulsate');
+          animateVisitedCell(overlayElement, targetColor);
         } else {
-          // Ensure pulsating class is removed when animations are off
-          overlayElement.classList.remove('path-pulsate');
+          overlayElement.style.opacity = '1';
+          overlayElement.style.backgroundColor = targetColor;
         }
       }
 
@@ -105,7 +108,10 @@ export function useGrid() {
         }
       }
 
-      if ((previousState === 'wall' || previousState === 'visited' || previousState === 'path') && state === 'empty') {
+      if (
+        (previousState === 'wall' || previousState === 'visited' || previousState === 'path') &&
+        state === 'empty'
+      ) {
         // Clear overlay styles to ensure cell returns to default appearance
         overlayElement.style.opacity = '0';
         overlayElement.style.backgroundColor = 'transparent';
@@ -122,11 +128,11 @@ export function useGrid() {
       // Handle 'visited' state
       if (state === 'visited') {
         const targetColor = getVisitedCellColor(algorithmType);
-        overlayElement.style.backgroundColor = targetColor;
         if (animationsEnabled.value) {
-          animateVisitedCell(overlayElement);
+          animateVisitedCell(overlayElement, targetColor);
         } else {
           overlayElement.style.opacity = '1';
+          overlayElement.style.backgroundColor = targetColor;
         }
       }
     }
@@ -164,11 +170,12 @@ export function useGrid() {
   }
 
   /**
-   * Animates the visited cell.
+   * Animates the visited or path cell.
    */
-  function animateVisitedCell(overlayElement: HTMLElement): void {
+  function animateVisitedCell(overlayElement: HTMLElement, color: string): void {
     gsap.to(overlayElement, {
       opacity: 1,
+      backgroundColor: color,
       duration: 0.2,
       ease: 'power1.inOut',
     });

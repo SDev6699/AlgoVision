@@ -1,4 +1,3 @@
-
 import type { Cell, CellState } from '@/composables/useGrid';
 import { startSequentialGlowLoop } from '@/composables/animations';
 import { currentPathCells, animationsEnabled } from '@/composables/useAnimations';
@@ -115,18 +114,15 @@ async function drawPath(
     currentCell = currentCell.previousNode;
   }
 
-  // Reverse the path cells to have them in order from start to end
-  const reversedPathCells = pathCells.reverse();
-
-  // Update cell states to 'path' (excluding start and end nodes)
-  for (const cell of reversedPathCells) {
+  // Animate from end to start without reversing the path
+  for (const cell of pathCells) {
     if (cell.state !== 'start' && cell.state !== 'end') {
       await updateCellState(cell.row, cell.col, 'path', 'A*');
     }
   }
 
   // Retrieve overlay elements for the path cells
-  const glowElements: HTMLElement[] = reversedPathCells
+  const glowElements: HTMLElement[] = pathCells
     .map((cell) => {
       const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
       return cellElement?.querySelector('.cell-overlay') as HTMLElement;
