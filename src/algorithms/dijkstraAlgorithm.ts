@@ -1,8 +1,7 @@
-
 import type { Cell, CellState } from '@/composables/useGrid';
 import type { Ref } from 'vue';
-import { startSequentialGlowLoop } from '@/composables/animations';
 import { currentPathCells, animationsEnabled } from '@/composables/useAnimations';
+import { startSequentialGlowStream } from '@/composables/animations';
 
 /**
  * Implements Dijkstra's pathfinding algorithm.
@@ -37,16 +36,14 @@ export async function dijkstraAlgorithm(
   startCell.gCost = 0;
 
   while (unvisitedNodes.length > 0) {
-    // Sort nodes by gCost (distance from start)
     unvisitedNodes.sort((a, b) => a.gCost - b.gCost);
     const currentCell = unvisitedNodes.shift()!;
     nodesVisited++;
 
     if (currentCell.state === 'wall') continue;
-    if (currentCell.gCost === Infinity) break; // Remaining nodes are inaccessible
+    if (currentCell.gCost === Infinity) break; // Inaccessible area
 
     if (currentCell === endCell) {
-      // Path found
       await drawPath(endCell, updateCellState);
       statusMessage.value = `Path found! Nodes visited: ${nodesVisited}`;
       return;
@@ -55,7 +52,7 @@ export async function dijkstraAlgorithm(
     const neighbors = getNeighbors(currentCell, grid);
     for (const neighbor of neighbors) {
       if (neighbor.state === 'wall') continue;
-      const distance = currentCell.gCost + 1; // Assuming uniform cost
+      const distance = currentCell.gCost + 1; 
       if (distance < neighbor.gCost) {
         neighbor.gCost = distance;
         neighbor.previousNode = currentCell;
@@ -71,7 +68,7 @@ export async function dijkstraAlgorithm(
 }
 
 /**
- * Retrieves all valid neighboring cells (up, down, left, right).
+ * Retrieves neighbors (up, down, left, right).
  */
 function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
   const neighbors: Cell[] = [];
@@ -84,7 +81,7 @@ function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
 }
 
 /**
- * Draws the shortest path by updating cell states and applying glow effects.
+ * Draws the shortest path and applies the continuous glow stream.
  */
 async function drawPath(
   endCell: Cell,
@@ -98,23 +95,21 @@ async function drawPath(
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
 
-  // Collect path cells including the start node
   while (currentCell) {
     pathCells.push(currentCell);
     currentCell = currentCell.previousNode;
   }
 
-  // Animate from end to start (tracing the path)
+  // Animate from end to start
   for (const cell of pathCells) {
     if (cell.state !== 'start' && cell.state !== 'end') {
       await updateCellState(cell.row, cell.col, 'path', 'Dijkstra');
     }
   }
 
-  // Reverse pathCells for glowing animation to proceed from start to end
+  // Reverse for glow from start-to-end
   const reversedPathCells = pathCells.slice().reverse();
 
-  // Retrieve overlay elements for the reversed path cells
   const glowElements: HTMLElement[] = reversedPathCells
     .map((cell) => {
       const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
@@ -122,14 +117,9 @@ async function drawPath(
     })
     .filter((el): el is HTMLElement => el !== null);
 
-  // Store the glow elements in currentPathCells
   currentPathCells.value = glowElements;
 
-  // Initiate the glow animation if animations are enabled
-  if (animationsEnabled.value) {
-    const glowDuration = 2000; // Total duration of the glow animation
-    const repeatDelay = 1000; // Delay between glow loops
-
-    startSequentialGlowLoop(glowElements, glowDuration, repeatDelay);
+  if (animationsEnabled.value && glowElements.length > 0) {
+    startSequentialGlowStream(glowElements, 500, 100, 1000);
   }
 }

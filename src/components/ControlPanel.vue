@@ -1,4 +1,3 @@
-
 <template>
   <div
     ref="controlPanel"
@@ -34,7 +33,7 @@
 import { defineComponent, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { gsap } from 'gsap';
 import { animationsEnabled, currentGlowTimeline, currentPathCells, glowSpeedMultiplier } from '@/composables/useAnimations';
-import { clearGlowEffects, startSequentialGlowLoop } from '@/composables/animations';
+import { clearGlowEffects, startSequentialGlowStream } from '@/composables/animations';
 
 export default defineComponent({
   name: 'ControlPanel',
@@ -52,19 +51,14 @@ export default defineComponent({
     watch(animationsEnabled, (newVal) => {
       console.log(`Animations Enabled: ${newVal}`);
       if (!newVal) {
-        clearGlowEffects(); // Pause the glow animation and reset styles
+        // Animations turned off
+        clearGlowEffects(); 
       } else {
-        // Animations have been re-enabled, speed multiplier is already increased in toggleAnimations
-        // Resume or start the glow animation
-        if (currentGlowTimeline.value) {
-          currentGlowTimeline.value.timeScale(glowSpeedMultiplier.value);
-          currentGlowTimeline.value.resume();
-        } else if (currentPathCells.value.length > 0) {
-          const glowDuration = 2000; // Base duration
-          const repeatDelay = 1000; // Base pause duration
-          const glowLength = 5; // Number of cells glowing at once
-
-          startSequentialGlowLoop(currentPathCells.value, glowDuration, repeatDelay, glowLength);
+        // Animations turned on
+        // If we have path cells, restart the continuous glow stream
+        if (currentPathCells.value.length > 0) {
+          startSequentialGlowStream(currentPathCells.value, 500, 100, 1000);
+          // The glow speed multiplier is automatically applied
         }
       }
     });
@@ -106,7 +100,6 @@ export default defineComponent({
 
 <style scoped>
 .control-panel {
-  /* Ensure the control panel is hidden initially for accessibility */
   transform: translateX(100%);
   transition: transform 0.5s ease;
 }

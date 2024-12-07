@@ -1,6 +1,6 @@
 import type { Cell, CellState } from '@/composables/useGrid';
-import { startSequentialGlowLoop } from '@/composables/animations';
 import { currentPathCells, animationsEnabled } from '@/composables/useAnimations';
+import { startSequentialGlowStream } from '@/composables/animations';
 
 /**
  * Implements the A* pathfinding algorithm.
@@ -31,7 +31,6 @@ export async function aStarAlgorithm(
   openSet.push(startCell);
 
   while (openSet.length > 0) {
-    // Sort nodes by fCost (total estimated cost)
     openSet.sort((a, b) => a.fCost - b.fCost);
     const currentCell = openSet.shift()!;
     closedSet.add(currentCell);
@@ -49,7 +48,7 @@ export async function aStarAlgorithm(
         continue;
       }
 
-      const tentativeGCost = currentCell.gCost + 1; // Assuming uniform cost
+      const tentativeGCost = currentCell.gCost + 1; // Uniform cost
       if (tentativeGCost < neighbor.gCost) {
         neighbor.gCost = tentativeGCost;
         neighbor.hCost = heuristic(neighbor, endCell);
@@ -70,14 +69,14 @@ export async function aStarAlgorithm(
 }
 
 /**
- * Heuristic function using Manhattan distance.
+ * Heuristic (Manhattan distance).
  */
 function heuristic(cellA: Cell, cellB: Cell): number {
   return Math.abs(cellA.row - cellB.row) + Math.abs(cellA.col - cellB.col);
 }
 
 /**
- * Retrieves all valid neighboring cells (up, down, left, right).
+ * Retrieves neighbors (up, down, left, right).
  */
 function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
   const neighbors: Cell[] = [];
@@ -94,7 +93,7 @@ function getNeighbors(cell: Cell, grid: Cell[][]): Cell[] {
 }
 
 /**
- * Draws the shortest path by updating cell states and applying glow effects.
+ * Draws the shortest path and applies the continuous glow stream.
  */
 async function drawPath(
   endCell: Cell,
@@ -108,7 +107,6 @@ async function drawPath(
   let currentCell: Cell | null = endCell;
   const pathCells: Cell[] = [];
 
-  // Collect path cells including the start node
   while (currentCell) {
     pathCells.push(currentCell);
     currentCell = currentCell.previousNode;
@@ -121,10 +119,9 @@ async function drawPath(
     }
   }
 
-  // Reverse pathCells for glowing animation to proceed from start to end
+  // Reverse pathCells for glow from start to end
   const reversedPathCells = pathCells.slice().reverse();
 
-  // Retrieve overlay elements for the reversed path cells
   const glowElements: HTMLElement[] = reversedPathCells
     .map((cell) => {
       const cellElement = document.getElementById(`cell-${cell.row}-${cell.col}`);
@@ -132,14 +129,10 @@ async function drawPath(
     })
     .filter((el): el is HTMLElement => el !== null);
 
-  // Store the glow elements in currentPathCells
   currentPathCells.value = glowElements;
 
-  // Initiate the glow animation if animations are enabled
-  if (animationsEnabled.value) {
-    const glowDuration = 2000; // Total duration of the glow animation
-    const repeatDelay = 1000; // Delay between glow loops
-
-    startSequentialGlowLoop(glowElements, glowDuration, repeatDelay);
+  if (animationsEnabled.value && glowElements.length > 0) {
+    // Continuous forward glow stream
+    startSequentialGlowStream(glowElements, 500, 100, 1000);
   }
 }
